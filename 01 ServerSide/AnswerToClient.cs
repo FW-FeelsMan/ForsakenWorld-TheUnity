@@ -1,0 +1,57 @@
+using System;
+using System.Collections;
+using System.IO;
+using System.Reflection;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Threading.Tasks;
+using UnityEngine;
+
+public class AnswerToClient 
+{
+    public IEnumerator ServerResponseWrapper(string _keyType, string _message)
+    {
+        var task = ServerResponseMessageObject(_keyType, _message);
+        yield return new WaitUntil(() => task.IsCompleted);
+    }
+
+    public static async Task<byte[]> ServerResponseMessageObject(string _keyType, string _message)
+    {
+        var _dataObject = new GlobalDataClasses.ServerResponseMessage
+        {
+            KeyType = _keyType,
+            Message = _message
+        };
+
+        return await RequestTypeAsync(_keyType, _dataObject);
+    }
+    public static async Task<byte[]> RequestTypeAsync(string keyType, object dataObject)
+    {
+        try
+        {
+            byte[] requestData;
+            var formatter = new BinaryFormatter();
+
+            using (MemoryStream memoryStream = new())
+            {
+                formatter.Serialize(memoryStream, keyType);
+                formatter.Serialize(memoryStream, dataObject);
+
+                memoryStream.Position = 0;
+                string debugKeyType = (string)formatter.Deserialize(memoryStream);
+                object debugDataObject = formatter.Deserialize(memoryStream);
+
+                await memoryStream.FlushAsync();
+                requestData = memoryStream.ToArray();
+            }
+
+            await SocketServer.Instance.SendDataAsync(requestData);
+            return requestData;
+        }
+        catch (Exception ex)
+        {   
+            string className = MethodBase.GetCurrentMethod().DeclaringType.Name;      
+            LogProcessor.ProcessLog(className, ex);
+            return null;
+        }
+    }
+}
