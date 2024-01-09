@@ -13,7 +13,6 @@ public class SocketServer : MonoBehaviour
     private Socket _listener;
     private bool _isListening;
     private static SocketServer instance;
-    string thisClassName;
     private List<Socket> connectedClients = new();
     public static SocketServer Instance
     {
@@ -33,7 +32,6 @@ public class SocketServer : MonoBehaviour
         {
             StartServer();
         }
-        thisClassName = FWLibrary.GetCallingClassName();
     }
 
     private void Update()
@@ -57,7 +55,7 @@ public class SocketServer : MonoBehaviour
 
         ListenForClients();
 
-        LogProcessor.ProcessLog(thisClassName, GlobalStrings.ServerStarted);
+        LogProcessor.ProcessLog(FWLibrary.GetCallingClassName(), GlobalStrings.ServerStarted);
     }
 
     private void StopServer()
@@ -88,7 +86,7 @@ public class SocketServer : MonoBehaviour
             }
             catch (ObjectDisposedException ex)
             {
-                LogProcessor.ProcessLog(thisClassName, ex);
+                LogProcessor.ProcessLog(FWLibrary.GetCallingClassName(), ex);
                 Debug.Log(ex);
             }
         }
@@ -122,7 +120,7 @@ public class SocketServer : MonoBehaviour
                 }
                 catch (Exception ex)
                 {
-                    LogProcessor.ProcessLog(thisClassName, "Ошибка при обработке клиента: " + ex.Message);
+                    LogProcessor.ProcessLog(FWLibrary.GetCallingClassName(), "Ошибка при обработке клиента: " + ex.Message);
                     Debug.LogError(ex);
                     break;
                 }
@@ -131,7 +129,7 @@ public class SocketServer : MonoBehaviour
         }
         else
         {
-            LogProcessor.ProcessLog(thisClassName, "Не удалось подключиться к клиенту");
+            LogProcessor.ProcessLog(FWLibrary.GetCallingClassName(), "Не удалось подключиться к клиенту");
         }
     }
     private void AddClient(Socket client)
@@ -156,7 +154,7 @@ public class SocketServer : MonoBehaviour
             }
             catch (Exception ex)
             {
-                LogProcessor.ProcessLog(thisClassName, $"Ошибка при отправке данных клиенту: {ex.Message}");
+                LogProcessor.ProcessLog(FWLibrary.GetCallingClassName(), $"Ошибка при отправке данных клиенту: {ex.Message}");
                 Debug.LogError(ex);
             }
         }
