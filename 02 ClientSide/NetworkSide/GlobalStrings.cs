@@ -1,3 +1,5 @@
+using UnityEngine;
+
 public static class GlobalStrings
 {
     public const string ErrorMessageConnectionLost = "Соединение с сервером потеряно.";
@@ -9,4 +11,8 @@ public static class GlobalStrings
     public const string FailedLogin = "Неверный емейл или пароль/Учетная запись не существует";
     public const string SuccessfulLogin = "Вход успешен!";
     public const string ServerStarted = "Сервер запущен на IP localhost и порту 26950";
+    public static string HyperlinkDeal()
+    {
+        return "file://" + Application.streamingAssetsPath + "/Пиратский кодекс.txt";
+    }
 }

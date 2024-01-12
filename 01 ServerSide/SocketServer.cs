@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using System.IO;
 using System.Collections.Generic;
-using ForsakenWorldLIB.Unity.GetCallingClassName;
+using ForsakenWorld;
 
 public class SocketServer : MonoBehaviour
 {
@@ -55,7 +55,7 @@ public class SocketServer : MonoBehaviour
 
         ListenForClients();
 
-        LogProcessor.ProcessLog(FWLibrary.GetCallingClassName(), GlobalStrings.ServerStarted);
+        LogProcessor.ProcessLog(FWL.GetClassName(), GlobalStrings.ServerStarted);
     }
 
     private void StopServer()
@@ -86,7 +86,7 @@ public class SocketServer : MonoBehaviour
             }
             catch (ObjectDisposedException ex)
             {
-                LogProcessor.ProcessLog(FWLibrary.GetCallingClassName(), ex);
+                LogProcessor.ProcessLog(FWL.GetClassName(), ex);
                 Debug.Log(ex);
             }
         }
@@ -120,7 +120,7 @@ public class SocketServer : MonoBehaviour
                 }
                 catch (Exception ex)
                 {
-                    LogProcessor.ProcessLog(FWLibrary.GetCallingClassName(), "Ошибка при обработке клиента: " + ex.Message);
+                    LogProcessor.ProcessLog(FWL.GetClassName(), "Ошибка при обработке клиента: " + ex.Message);
                     Debug.LogError(ex);
                     break;
                 }
@@ -129,7 +129,7 @@ public class SocketServer : MonoBehaviour
         }
         else
         {
-            LogProcessor.ProcessLog(FWLibrary.GetCallingClassName(), "Не удалось подключиться к клиенту");
+            LogProcessor.ProcessLog(FWL.GetClassName(), "Не удалось подключиться к клиенту");
         }
     }
     private void AddClient(Socket client)
@@ -154,7 +154,7 @@ public class SocketServer : MonoBehaviour
             }
             catch (Exception ex)
             {
-                LogProcessor.ProcessLog(FWLibrary.GetCallingClassName(), $"Ошибка при отправке данных клиенту: {ex.Message}");
+                LogProcessor.ProcessLog(FWL.GetClassName(), $"Ошибка при отправке данных клиенту: {ex.Message}");
                 Debug.LogError(ex);
             }
         }

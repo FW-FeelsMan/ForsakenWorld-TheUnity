@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using Michsky.UI.Frost;
 using TMPro;
 using UnityEngine;

@@ -4,15 +4,13 @@ using UnityEngine.UI;
 
 public class FadeInImageLoader : MonoBehaviour
 {
-    public GameObject blurLoader; // Ссылка на игровой объект BlurLoader
-    public Image imageFabe; // Ссылка на компонент ImageFabe
-
-    private Canvas canvas; // Ссылка на компонент Canvas у BlurLoader
-    private bool hasFadedIn = false; // Флаг, указывающий, было ли уже выполнено плавное увеличение непрозрачности
+    public GameObject blurLoader; 
+    public Image imageFabe; 
+    private Canvas canvas; 
+    private bool hasFadedIn = false; 
 
     private void Start()
     {
-        // Получаем компонент Canvas из игрового объекта BlurLoader
         canvas = blurLoader.GetComponent<Canvas>();
     }
 
@@ -32,14 +30,12 @@ public class FadeInImageLoader : MonoBehaviour
 
     private IEnumerator FadeInImageFabe()
     {
-        // Сбрасываем непрозрачность до 0
         imageFabe.color = new Color(imageFabe.color.r, imageFabe.color.g, imageFabe.color.b, 0f);
 
         float targetAlpha = 240f / 255f;
         float currentAlpha = 0f;
         float fadeSpeed = 2.3f;
 
-        // Плавно увеличиваем непрозрачность до 250
         while (currentAlpha < targetAlpha)
         {
             currentAlpha += fadeSpeed * Time.deltaTime;
@@ -54,7 +50,6 @@ public class FadeInImageLoader : MonoBehaviour
         float currentAlpha = 250f / 255f;
         float fadeSpeed = 2.3f;
 
-        // Плавно сбрасываем непрозрачность до 0
         while (currentAlpha > targetAlpha)
         {
             currentAlpha -= fadeSpeed * Time.deltaTime;

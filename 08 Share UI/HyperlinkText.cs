@@ -4,7 +4,6 @@ using TMPro;
 
 public class HyperlinkText : MonoBehaviour, IPointerClickHandler
 {
-    [SerializeField] private string linkURL = "http://localhost/UnityBackend/getCONDITIONS.php";
     [SerializeField] private TMP_Text textMeshPro;
 
     private void Awake()
@@ -16,6 +15,6 @@ public class HyperlinkText : MonoBehaviour, IPointerClickHandler
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        Application.OpenURL(linkURL);
+        Application.OpenURL(GlobalStrings.HyperlinkDeal());
     }
 }

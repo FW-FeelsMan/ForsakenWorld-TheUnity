@@ -51,7 +51,6 @@ public class LoaderController : MonoBehaviour
 
     private void Update()
     {
-        // Вращение родительского объекта вокруг своей оси Z
         loaderRectTransform.Rotate(-Vector3.forward, rotationSpeed * Time.deltaTime);
     }
 }

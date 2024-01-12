@@ -2,13 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+using ForsakenWorld;
 
 public class DecodingData
 {
     private readonly Dictionary<string, Action<object>> handlers = new();
     private readonly DataHandler dataHandler;
     private readonly AnswerToClient answerToClient;
-    private readonly string thisClassName = "DecodingData";
 
     public DecodingData()
     {
@@ -127,17 +127,17 @@ public class DecodingData
                 }
                 else
                 {
-                    LogProcessor.ProcessLog(thisClassName, $"Не найден обработчик под полученный ключ: {keyType}");
+                    LogProcessor.ProcessLog(FWL.GetClassName(), $"Не найден обработчик под полученный ключ: {keyType}");
                 }
             }
             catch (Exception ex)
             {
-                LogProcessor.ProcessLog(thisClassName, $"Ошибка десериализации объекта: {ex.Message}");
+                LogProcessor.ProcessLog(FWL.GetClassName(), $"Ошибка десериализации объекта: {ex.Message}");
             }
         }
         catch (Exception ex)
         {
-            LogProcessor.ProcessLog(thisClassName, $"Ошибка обработки полученного пакета: {ex.Message}");
+            LogProcessor.ProcessLog(FWL.GetClassName(), $"Ошибка обработки полученного пакета: {ex.Message}");
         }
     }
 }

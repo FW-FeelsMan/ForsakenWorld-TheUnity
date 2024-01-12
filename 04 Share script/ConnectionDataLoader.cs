@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.IO;
+using ForsakenWorld;
 
 public class ConnectionDataLoader : MonoBehaviour
 {
@@ -28,8 +29,7 @@ public class ConnectionDataLoader : MonoBehaviour
         }
         else
         {
-            string thisClassName = "ConnectionDataLoader";
-            LogProcessor.ProcessLog(thisClassName, ErrorMessageFileNotFound);
+            LogProcessor.ProcessLog(FWL.GetClassName(), ErrorMessageFileNotFound);
         }
     }
 }

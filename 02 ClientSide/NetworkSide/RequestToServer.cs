@@ -3,6 +3,7 @@ using System.Collections;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
+using ForsakenWorld;
 using TMPro;
 using UnityEngine;
 public class RequestToServer : MonoBehaviour
@@ -13,11 +14,10 @@ public class RequestToServer : MonoBehaviour
     public TMP_InputField reg_passwordLoginField;
     public TMP_InputField reg_passwordConfirm;
     private UIManager uIManager;
-    private static string thisClassName;
+
     void Start()
     {
         uIManager = GetComponent<UIManager>();
-        thisClassName = GetType().Name;
     }
 
     public void OnLoginButtonClicked()
@@ -137,7 +137,7 @@ public class RequestToServer : MonoBehaviour
         catch (Exception ex)
         {
             
-            LogProcessor.ProcessLog(thisClassName, $"Error in RequestTypeAsync: {ex.Message}");
+            LogProcessor.ProcessLog(FWL.GetClassName(), $"Error in RequestTypeAsync: {ex.Message}");
             return null;
         }
     }

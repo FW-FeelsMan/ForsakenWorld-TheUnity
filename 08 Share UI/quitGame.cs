@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using ForsakenWorld;
 using TMPro;
 using UnityEngine;
 public class QuitGame : MonoBehaviour
@@ -7,7 +8,6 @@ public class QuitGame : MonoBehaviour
     public Canvas canvasBlurScreenLoader;
     public TextMeshProUGUI textResult;
     public GameObject btnConfirm;
-    private string thisClassName = "QuitGame";
 
     public void QuitGameClick()
     {
@@ -20,7 +20,7 @@ public class QuitGame : MonoBehaviour
         }
         catch (System.Exception ex)
         {
-            LogProcessor.ProcessLog(thisClassName, $"An error occurred:  + {ex.Message}");
+            LogProcessor.ProcessLog(FWL.GetClassName(), $"An error occurred:  + {ex.Message}");
         }
     }
 
@@ -33,7 +33,7 @@ public class QuitGame : MonoBehaviour
         }
         catch (System.Exception ex)
         {
-             LogProcessor.ProcessLog(thisClassName, $"An error occurred:  + {ex.Message}");
+             LogProcessor.ProcessLog(FWL.GetClassName(), $"An error occurred:  + {ex.Message}");
         }
     }
 }
