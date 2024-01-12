@@ -1,9 +1,9 @@
 using System;
 using System.Collections;
 using System.IO;
-using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
+using ForsakenWorld;
 using UnityEngine;
 
 public class AnswerToClient 
@@ -48,9 +48,8 @@ public class AnswerToClient
             return requestData;
         }
         catch (Exception ex)
-        {   
-            string className = MethodBase.GetCurrentMethod().DeclaringType.Name;      
-            LogProcessor.ProcessLog(className, ex);
+        {                   
+            LogProcessor.ProcessLog(FWL.GetClassName(), ex);
             return null;
         }
     }

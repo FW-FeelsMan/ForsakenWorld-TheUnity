@@ -2,7 +2,7 @@ using UnityEngine;
 using System.IO;
 using ForsakenWorld;
 
-public class ConnectionDataLoader : MonoBehaviour
+public class ConnectionDataLoader: MonoBehaviour
 {
     public string serverIpAddress;
     public int serverPort;

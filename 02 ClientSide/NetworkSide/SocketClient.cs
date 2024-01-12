@@ -32,7 +32,7 @@ public class SocketClient : MonoBehaviour
     {
         instance = this;
         uiManager = GetComponent<UIManager>();
-        connectionDataLoader = GetComponent<ConnectionDataLoader>();
+        connectionDataLoader = gameObject.AddComponent<ConnectionDataLoader>();
         connectionDataLoader.LoadConnectionData();
 
         uiManager.CanvasLoadingScreen.enabled = false;
@@ -131,25 +131,8 @@ public class SocketClient : MonoBehaviour
                     string serverResponse = Encoding.UTF8.GetString(responseBuffer, 0, length);
                     Debug.Log($"Получен ответ от сервера: {serverResponse}");
 
-                    switch (serverResponse)
-                    {
-                        case CommandKeys.FailedRegistration:
-                            uiManager.DisplayError(GlobalStrings.RegistrationErrorEmailExists);
-                            break;
-                        case CommandKeys.SuccessfulRegistration:
-                            uiManager.DisplayConfirmReg();
-                            break;
-                        case CommandKeys.FailedLogin:
-                            uiManager.DisplayError(GlobalStrings.FailedLogin);
-                            break;
-                        case CommandKeys.SuccessfulLogin:
-                            uiManager.ShowMenu();
-                            uiManager.HideConnecting();
-                            break;
-                        default:
-                            uiManager.DisplayError(GlobalStrings.UnknownPackage);
-                            break;
-                    }
+                    //TODO
+                   
                 }
                 else
                 {
