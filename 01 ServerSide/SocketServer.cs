@@ -7,24 +7,12 @@ using System.IO;
 using System.Collections.Generic;
 using ForsakenWorld;
 
-public class SocketServer : MonoBehaviour
+public class SocketServer : Singleton<SocketServer>
 {
     public bool isOn;
     private Socket _listener;
     private bool _isListening;
-    private static SocketServer instance;
-    private List<Socket> connectedClients = new();
-    public static SocketServer Instance
-    {
-        get
-        {
-            if (instance == null)
-            {
-                instance = FindObjectOfType<SocketServer>();
-            }
-            return instance;
-        }
-    }
+    private readonly List<Socket> connectedClients = new();
 
     private void Start()
     {

@@ -1,27 +1,11 @@
 using System;
 using System.Collections;
-using System.IO;
 using System.Net.Sockets;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 
-public class SocketClient : MonoBehaviour
+public class SocketClient : Singleton<SocketClient>
 {
-    private static SocketClient instance;
-    public static SocketClient Instance
-    {
-        get
-        {
-            if (instance == null)
-            {
-                instance = FindObjectOfType<SocketClient>();
-            }
-            return instance;
-        }
-    }
-
     private NetworkStream _networkStream;
     public event Action ServerDisconnected;
     public Socket Client { get; private set; }
@@ -33,7 +17,6 @@ public class SocketClient : MonoBehaviour
 
     private void Start()
     {
-        instance = this;
         uiManager = GetComponent<UIManager>();
         decoder = GetComponent<DecodingDataFromServer>();
         connectionDataLoader = gameObject.AddComponent<ConnectionDataLoader>();

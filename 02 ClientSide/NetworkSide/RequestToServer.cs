@@ -96,8 +96,8 @@ public class RequestToServer : MonoBehaviour
 
     public static async Task<byte[]> UserData(string _keyType, string _email, string _password)
     {
-        var _hashedPassword = HashData.Hashing(_password);
-        var _hardwareID = HardwareID.GetHardwareID();
+        var _hashedPassword = GlobalStrings.Hashing(_password);
+        var _hardwareID = GlobalStrings.GetHardwareID();
 
         var _dataObject = new GlobalDataClasses.UserDataObject
         {

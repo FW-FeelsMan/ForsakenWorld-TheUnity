@@ -53,7 +53,7 @@ public class LoginManager : MonoBehaviour
         string password = InputFieldsGroup.passwordLoginField.text;
         MySqlConnection connection = databaseManager.GetConnection();
         
-        string id_device = HardwareID.GetHardwareID();
+        string id_device = GlobalStrings.GetHardwareID();
 
         StartCoroutine(LoginCoroutine(email, password, id_device, connection));
     }
