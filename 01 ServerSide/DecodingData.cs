@@ -3,18 +3,17 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using ForsakenWorld;
+using UnityEngine;
 
-public class DecodingData
+public class DecodingData : MonoBehaviour
 {
     private readonly Dictionary<string, Action<object>> handlers = new();
-    private readonly DataHandler dataHandler;
-    private readonly AnswerToClient answerToClient;
+    private AnswerToClient answerToClient = new();
+    private DataHandler dataHandler = new();
 
     public DecodingData()
     {
         RegisterHandlers();
-        dataHandler = new DataHandler();
-        answerToClient = new AnswerToClient();
     }
 
     private void RegisterHandlers()
@@ -39,8 +38,7 @@ public class DecodingData
 
             if (email == null || hashedPassword == null || hardwareID == null)
             {
-                string exceptionMessage = "Некорректные данные/Данные содержат недопустимые символы";
-                answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, exceptionMessage);
+                _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, GlobalStrings.IncorrectData);
             }
             else
             {
@@ -52,20 +50,21 @@ public class DecodingData
 
                     if (dataHandler._isUserActive)
                     {
-                        string exceptionMessage = "Пользователь уже онлайн";
-                        answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, exceptionMessage);
+                        _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, GlobalStrings.UserIsAlreadyOnline);
+                        Debug.Log($"{CommandKeys.FailedLogin}, Пользователь уже онлайн");
                     }
                     else
                     {
                         dataHandler.SetClientStatus(email, 1);
                         string responseMessage = "Добро пожаловать!";
-                        answerToClient.ServerResponseWrapper(CommandKeys.LoginRequest, responseMessage);
+                        _ = answerToClient.ServerResponseWrapper(CommandKeys.LoginRequest, responseMessage);
                     }
                 }
                 else
                 {
                     string exceptionMessage = "Неудачная попытка входа. Проверьте емейл и пароль";
-                    answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, exceptionMessage);
+                    _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, exceptionMessage);
+                    Debug.Log($"{CommandKeys.FailedLogin}, {exceptionMessage}");
                 }
             }
         }
@@ -83,7 +82,7 @@ public class DecodingData
             if (email == null || hashedPassword == null || hardwareID == null)
             {
                 string exceptionMessage = "Некорректные данные";
-                answerToClient.ServerResponseWrapper(CommandKeys.FailedRegistration, exceptionMessage);
+                _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedRegistration, exceptionMessage);
             }
             else
             {
@@ -92,12 +91,12 @@ public class DecodingData
                 if (registerResult)
                 {
                     string responseMessage = "Регистрация успешна";
-                    answerToClient.ServerResponseWrapper(CommandKeys.SuccessfulRegistration, responseMessage);
+                    _ = answerToClient.ServerResponseWrapper(CommandKeys.SuccessfulRegistration, responseMessage);
                 }
                 else
                 {
                     string exceptionMessage = "Указанный емейл уже зарегистрирован";
-                    answerToClient.ServerResponseWrapper(CommandKeys.FailedRegistration, exceptionMessage);
+                    _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedRegistration, exceptionMessage);
                 }
             }
         }

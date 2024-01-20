@@ -151,11 +151,11 @@ public class SocketServer : MonoBehaviour
             {
                 using NetworkStream networkStream = new(client);
                 await networkStream.WriteAsync(data, 0, data.Length);
+                Debug.Log($"Отправлены данные: {BitConverter.ToString(data)}");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                LogProcessor.ProcessLog(FWL.GetClassName(), $"Ошибка при отправке данных клиенту: {ex.Message}");
-                Debug.LogError(ex);
+                
             }
         }
     }

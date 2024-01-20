@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
+using System.IO;
 using System.Net.Sockets;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -27,11 +29,13 @@ public class SocketClient : MonoBehaviour
     private UIManager uiManager;
     private PingManager pingManager;
     private ConnectionDataLoader connectionDataLoader;
+    private DecodingDataFromServer decoder;
 
     private void Start()
     {
         instance = this;
         uiManager = GetComponent<UIManager>();
+        decoder = GetComponent<DecodingDataFromServer>();
         connectionDataLoader = gameObject.AddComponent<ConnectionDataLoader>();
         connectionDataLoader.LoadConnectionData();
 
@@ -126,13 +130,11 @@ public class SocketClient : MonoBehaviour
             try
             {
                 var length = await _networkStream.ReadAsync(responseBuffer, 0, responseBuffer.Length);
-                if (length > 0)
-                {
-                    string serverResponse = Encoding.UTF8.GetString(responseBuffer, 0, length);
-                    Debug.Log($"Получен ответ от сервера: {serverResponse}");
 
-                    //TODO
-                   
+                if (length > 0)
+                {                    
+                    Debug.Log($"Получены данные: {BitConverter.ToString(responseBuffer)}");
+                    decoder.DeserializeAndHandleObject(responseBuffer);
                 }
                 else
                 {
@@ -150,4 +152,5 @@ public class SocketClient : MonoBehaviour
             }
         }
     }
+
 }

@@ -10,9 +10,12 @@ public static class GlobalStrings
     public const string SuccessfulRegistration = "Регистрация успешна!";
     public const string FailedLogin = "Неверный емейл или пароль/Учетная запись не существует";
     public const string SuccessfulLogin = "Вход успешен!";
-    public const string ServerStarted = "Сервер запущен на IP localhost и порту 26950";
+    public const string ServerStarted = "Сервер запущен ";
     public static string HyperlinkDeal()
     {
         return "file://" + Application.streamingAssetsPath + "/Пиратский кодекс.txt";
     }
+    public const string IncorrectData = "Некорректные данные/Данные содержат недопустимые символы";
+    public const string UserIsAlreadyOnline = "Пользователь уже онлайн";
+    public const string HelloUserTest = "Добро пожаловатЬ!";
 }
