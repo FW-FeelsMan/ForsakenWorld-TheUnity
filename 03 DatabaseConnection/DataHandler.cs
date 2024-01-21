@@ -1,14 +1,13 @@
 using System;
 using System.IO;
 using MySql.Data.MySqlClient;
-using UnityEngine;
+using ForsakenWorld;
 
 public class DataHandler
 {
     private readonly string connectionString = "Server=localhost;Database=fw_database;User=root;Password=";
     private string loggedInUserEmail;
     public bool _isUserActive;
-    string thisClassName = "DataHandler";
 
     public bool HandleLoginData(string email, string hashedPassword, string hardwareID, DateTime lastLoginDate)
     {
@@ -127,7 +126,7 @@ public class DataHandler
         }
         catch (Exception ex)
         {
-            LogProcessor.ProcessLog(thisClassName, $"Ошибка при обновлении файла: {ex.Message}");
+            LogProcessor.ProcessLog(FWL.GetClassName(), $"Ошибка при обновлении файла: {ex.Message}");
         }
     }
 
@@ -144,7 +143,7 @@ public class DataHandler
         }
         catch (Exception ex)
         {
-            LogProcessor.ProcessLog(thisClassName, $"Ошибка при создании файла: {ex.Message}");
+            LogProcessor.ProcessLog(FWL.GetClassName(), $"Ошибка при создании файла: {ex.Message}");
         }
     }
     public string GetLoggedInUserEmail()

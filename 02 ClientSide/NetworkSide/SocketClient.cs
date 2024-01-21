@@ -114,8 +114,9 @@ public class SocketClient : Singleton<SocketClient>
 
                 if (length > 0)
                 {                    
-                    Debug.Log($"Получены данные: {BitConverter.ToString(responseBuffer)}");
-                    DecodingDataFromServer.DeserializeAndHandleObject(responseBuffer);
+                    Debug.Log($"Ответ от сервера: {BitConverter.ToString(responseBuffer)}");
+                    DecodingDataFromServer decodingDataFromServer = new();
+                     _ = Task.Run(() => decodingDataFromServer.ProcessPacketAsync(responseBuffer));
                 }
                 else
                 {

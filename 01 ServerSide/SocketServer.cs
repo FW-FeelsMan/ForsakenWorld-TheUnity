@@ -86,6 +86,7 @@ public class SocketServer : Singleton<SocketServer>
         {
             using NetworkStream networkStream = new(client);
             using BinaryReader reader = new(networkStream);
+
             while (client != null && client.Connected)
             {
                 try
@@ -94,16 +95,18 @@ public class SocketServer : Singleton<SocketServer>
                     if (isDisconnected)
                     {
                         decodingData.ClientisDisconnected();
-                        RemoveClient(client);                        
+                        RemoveClient(client);
                         break;
                     }
 
                     byte[] buffer = new byte[1024];
                     int bytesRead = await networkStream.ReadAsync(buffer, 0, buffer.Length);
+
                     AddClient(client);
                     if (bytesRead > 0)
                     {
-                        decodingData.ProcessPacketAsync(buffer);
+                        _ = Task.Run(() => decodingData.ProcessPacketAsync(buffer));
+                        Debug.Log("Привет, отладка!");
                     }
                 }
                 catch (Exception ex)
@@ -112,6 +115,7 @@ public class SocketServer : Singleton<SocketServer>
                     Debug.LogError(ex);
                     break;
                 }
+
                 await Task.Delay(1000);
             }
         }
@@ -120,6 +124,7 @@ public class SocketServer : Singleton<SocketServer>
             LogProcessor.ProcessLog(FWL.GetClassName(), "Не удалось подключиться к клиенту");
         }
     }
+
     private void AddClient(Socket client)
     {
         connectedClients.Add(client);

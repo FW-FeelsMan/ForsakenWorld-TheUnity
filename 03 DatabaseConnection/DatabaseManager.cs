@@ -3,7 +3,7 @@ using MySql.Data.MySqlClient;
 
 public class DatabaseManager : MonoBehaviour
 {
-    private string connectionString = "Server=localhost;Database=fw_database;User=root;Password=;";
+    private readonly string connectionString = "Server=localhost;Database=fw_database;User=root;Password=;";
     private MySqlConnection connection;
 
     private void Start()
@@ -19,9 +19,6 @@ public class DatabaseManager : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (connection != null)
-        {
-            connection.Close();
-        }
+        connection?.Close();
     }
 }

@@ -2,10 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Threading.Tasks;
 using ForsakenWorld;
 using UnityEngine;
 
-public class DecodingData 
+public class DecodingData
 {
     private readonly Dictionary<string, Action<object>> handlers = new();
     private readonly AnswerToClient answerToClient = new();
@@ -13,16 +14,16 @@ public class DecodingData
 
     public DecodingData()
     {
-        RegisterHandlers();
+        PacketHandlers();
     }
 
-    private void RegisterHandlers()
+    private void PacketHandlers()
     {
-        RegisterHandler(CommandKeys.LoginRequest, HandleLoginRequest);
-        RegisterHandler(CommandKeys.RegistrationRequest, HandleRegistrationRequest);
+        PacketHandler(CommandKeys.LoginRequest, HandleLoginRequest);
+        PacketHandler(CommandKeys.RegistrationRequest, HandleRegistrationRequest);
     }
 
-    private void RegisterHandler(string keyType, Action<object> handler)
+    private void PacketHandler(string keyType, Action<object> handler)
     {
         handlers[keyType] = handler;
     }
@@ -108,35 +109,41 @@ public class DecodingData
         dataHandler.SetClientStatus(emailUserInLogged, 0);
     }
 
-    public void ProcessPacketAsync(byte[] packet)
+    public async Task ProcessPacketAsync(byte[] packet)
     {
         try
         {
-            using MemoryStream memoryStream = new(packet);
-            var formatter = new BinaryFormatter();
-
-            try
+            await Task.Run(() =>
             {
-                string keyType = (string)formatter.Deserialize(memoryStream);
+                using MemoryStream memoryStream = new(packet);
+                var formatter = new BinaryFormatter();
 
-                if (handlers.TryGetValue(keyType, out var handler))
+                try
                 {
-                    object dataObject = formatter.Deserialize(memoryStream);
-                    handler(dataObject);
+                    string keyType = (string)formatter.Deserialize(memoryStream);
+
+                    if (handlers.TryGetValue(keyType, out var handler))
+                    {
+                        object dataObject = formatter.Deserialize(memoryStream);
+                        handler(dataObject);                        
+                    }
+                    else
+                    {
+                        LogProcessor.ProcessLog(FWL.GetClassName(), $"Не найден обработчик под полученный ключ: {keyType}");
+                        Debug.Log($"Не найден обработчик под полученный ключ: {keyType}");
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    LogProcessor.ProcessLog(FWL.GetClassName(), $"Не найден обработчик под полученный ключ: {keyType}");
+                    LogProcessor.ProcessLog(FWL.GetClassName(), $"Ошибка десериализации объекта: {ex.Message}");
+                    Debug.Log($"Ошибка десериализации объекта: {ex.Message}");
                 }
-            }
-            catch (Exception ex)
-            {
-                LogProcessor.ProcessLog(FWL.GetClassName(), $"Ошибка десериализации объекта: {ex.Message}");
-            }
+            });
         }
         catch (Exception ex)
         {
             LogProcessor.ProcessLog(FWL.GetClassName(), $"Ошибка обработки полученного пакета: {ex.Message}");
+            Debug.Log($"Ошибка обработки полученного пакета: {ex.Message}");
         }
     }
 }
