@@ -29,7 +29,15 @@ public class UIManager : MonoBehaviour
         {
             LoadingScreenButton.GetComponent<Button>().onClick.AddListener(QuitApplication);
         }
-        graphicCanvasEnabledLogin.enabled = false;
+        try
+        {
+            graphicCanvasEnabledLogin.enabled = false;
+        }
+        catch
+        {
+
+        }
+
     }
     private void SetCurrentIndex(int index)
     {

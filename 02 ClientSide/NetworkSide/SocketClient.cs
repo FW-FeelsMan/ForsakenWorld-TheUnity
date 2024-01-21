@@ -13,12 +13,10 @@ public class SocketClient : Singleton<SocketClient>
     private UIManager uiManager;
     private PingManager pingManager;
     private ConnectionDataLoader connectionDataLoader;
-    private DecodingDataFromServer decoder;
 
     private void Start()
     {
         uiManager = GetComponent<UIManager>();
-        decoder = GetComponent<DecodingDataFromServer>();
         connectionDataLoader = gameObject.AddComponent<ConnectionDataLoader>();
         connectionDataLoader.LoadConnectionData();
 
@@ -117,7 +115,7 @@ public class SocketClient : Singleton<SocketClient>
                 if (length > 0)
                 {                    
                     Debug.Log($"Получены данные: {BitConverter.ToString(responseBuffer)}");
-                    decoder.DeserializeAndHandleObject(responseBuffer);
+                    DecodingDataFromServer.DeserializeAndHandleObject(responseBuffer);
                 }
                 else
                 {

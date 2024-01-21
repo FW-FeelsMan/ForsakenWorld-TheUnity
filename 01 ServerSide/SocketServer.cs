@@ -141,9 +141,9 @@ public class SocketServer : Singleton<SocketServer>
                 await networkStream.WriteAsync(data, 0, data.Length);
                 Debug.Log($"Отправлены данные: {BitConverter.ToString(data)}");
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                
+                Debug.Log($"Ошибка отправки данных клиенту: {ex}");
             }
         }
     }

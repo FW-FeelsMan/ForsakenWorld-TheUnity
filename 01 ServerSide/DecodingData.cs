@@ -5,11 +5,11 @@ using System.Runtime.Serialization.Formatters.Binary;
 using ForsakenWorld;
 using UnityEngine;
 
-public class DecodingData : MonoBehaviour
+public class DecodingData 
 {
     private readonly Dictionary<string, Action<object>> handlers = new();
-    private AnswerToClient answerToClient = new();
-    private DataHandler dataHandler = new();
+    private readonly AnswerToClient answerToClient = new();
+    private readonly DataHandler dataHandler = new();
 
     public DecodingData()
     {

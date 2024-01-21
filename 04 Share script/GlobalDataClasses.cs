@@ -13,7 +13,7 @@ public class GlobalDataClasses : MonoBehaviour
     }
 
     [Serializable]
-    public class ServerResponseMessage 
+    public struct ServerResponseMessage 
     {
         public string KeyType { get; set; }
         public string Message { get; set; }

@@ -4,18 +4,31 @@ using System.Runtime.Serialization.Formatters.Binary;
 using ForsakenWorld;
 using UnityEngine;
 
+[Serializable]
+public class ServerResponseMessageWrapper
+{
+    public string KeyType { get; set; }
+    public GlobalDataClasses.ServerResponseMessage Message { get; set; }
+}
+
 public class DecodingDataFromServer : MonoBehaviour
 {
-    public void DeserializeAndHandleObject(byte[] data)
+    public static void DeserializeAndHandleObject(byte[] data)
     {
         try
         {
             using MemoryStream memoryStream = new(data);
             var formatter = new BinaryFormatter();
+            var serverResponseWrapper = formatter.Deserialize(memoryStream) as ServerResponseMessageWrapper;
 
-            var dataServer = formatter.Deserialize(memoryStream);
-
-            HandleDeserializedObject(dataServer);
+            if (serverResponseWrapper != null)
+            {
+                HandleDeserializedObject(serverResponseWrapper);
+            }
+            else
+            {
+                Debug.Log("Ошибка: Неверный формат данных.");
+            }
         }
         catch (Exception ex)
         {
@@ -24,19 +37,21 @@ public class DecodingDataFromServer : MonoBehaviour
         }
     }
 
-    private void HandleDeserializedObject(object deserializedObject)
+    private static void HandleDeserializedObject(ServerResponseMessageWrapper serverResponseWrapper)
     {
         try
         {
-            if (deserializedObject is GlobalDataClasses.ServerResponseMessage serverResponseMessage)
+            if (serverResponseWrapper != null)
             {
-                Debug.Log($"Десериализован объект ключом: {serverResponseMessage.KeyType}, и сообщением: {serverResponseMessage.Message}");
+                Debug.Log($"Десериализован объект ключом: {serverResponseWrapper.KeyType}, и сообщением: {serverResponseWrapper.Message.Message}");
             }
             else
             {
-                Debug.Log($"Десериализован объект неизвестного типа: {deserializedObject.GetType().Name}");
+                Debug.Log($"Десериализован объект ключом: {serverResponseWrapper.KeyType}, и сообщением: null");
             }
-        }catch(Exception ex){
+        }
+        catch (Exception ex)
+        {
             Debug.Log($"Ошибка декодирования: {ex}");
         }
     }
