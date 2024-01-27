@@ -1,27 +1,35 @@
 using System;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Net.Sockets;
 using System.Threading.Tasks;
-using ForsakenWorld;
 
 public class AnswerToClient 
 {
-    public async Task ServerResponseWrapper(string _keyType, string _message)
+    private readonly Socket clientSocket;
+
+    public AnswerToClient(Socket clientSocket)
     {
-        await ServerResponseMessageObject(_keyType, _message);
+        this.clientSocket = clientSocket;
     }
 
-    public static async Task<byte[]> ServerResponseMessageObject(string _keyType, string _message)
+    public async Task ServerResponseWrapper(string keyType, string message)
     {
-        var _dataObject = new GlobalDataClasses.ServerResponseMessage
-        {
-            KeyType = _keyType,
-            Message = _message
-        };
-        
-        return await RequestTypeAsync(_keyType, _dataObject);
+        await ServerResponseMessageObject(keyType, message);
     }
-    public static async Task<byte[]> RequestTypeAsync(string keyType, object dataObject)
+
+    public async Task ServerResponseMessageObject(string keyType, string message)
+    {
+        var dataObject = new GlobalDataClasses.ServerResponseMessage
+        {
+            KeyType = keyType,
+            Message = message
+        };
+
+        await RequestTypeAsync(keyType, dataObject);
+    }
+
+    private async Task RequestTypeAsync(string keyType, object dataObject)
     {
         try
         {
@@ -41,16 +49,39 @@ public class AnswerToClient
                 requestData = memoryStream.ToArray();
             }
 
-           
-            await SocketServer.Instance.SendDataAsync(requestData);
-            
-
-            return requestData;
+            await SendDataAsync(requestData);
         }
         catch (Exception ex)
-        {                   
-            LogProcessor.ProcessLog(FWL.GetClassName(), ex);
-            return null;
+        {
+            
         }
     }
+
+    private async Task SendDataAsync(byte[] data)
+    {
+        try
+        {
+            using NetworkStream networkStream = new(clientSocket);
+            await networkStream.WriteAsync(data, 0, data.Length);
+           
+        }
+        catch (Exception ex)
+        {      
+            CloseClientSocket();
+        }
+    }
+
+    private void CloseClientSocket()
+    {
+        try
+        {
+            clientSocket.Shutdown(SocketShutdown.Both);
+            clientSocket.Close();
+        }
+        catch (Exception closeEx)
+        {
+            
+        }
+    }
+
 }

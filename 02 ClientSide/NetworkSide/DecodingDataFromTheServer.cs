@@ -34,8 +34,8 @@ public class DecodingDataFromServer : MonoBehaviour
         {
             string _key = responseData.KeyType;
             string _message = responseData.Message;
-            Debug.Log("Ответ на запрос входа в игру");
-            Debug.Log($"Получено: ключ {_key}; \n сообщение {_message}");
+
+            Debug.Log($"Получено: \n Ключ {_key}; \n Сообщение: {_message}");
         }
     }
     private void HandleRegistrationResponse(object dataObject)

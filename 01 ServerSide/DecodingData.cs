@@ -1,19 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Sockets;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
-using ForsakenWorld;
-using UnityEngine;
 
-public class DecodingData
+public class DecodingData 
 {
     private readonly Dictionary<string, Action<object>> handlers = new();
-    private readonly AnswerToClient answerToClient = new();
+    private readonly AnswerToClient answerToClient;
     private readonly DataHandler dataHandler = new();
 
-    public DecodingData()
+    public DecodingData(Socket clientSocket)
     {
+        answerToClient = new AnswerToClient(clientSocket);
         PacketHandlers();
     }
 
@@ -52,7 +52,7 @@ public class DecodingData
                     if (dataHandler._isUserActive)
                     {
                         _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, GlobalStrings.UserIsAlreadyOnline);
-                        Debug.Log($"{CommandKeys.FailedLogin}, Пользователь уже онлайн");
+                        
                     }
                     else
                     {
@@ -65,7 +65,7 @@ public class DecodingData
                 {
                     string exceptionMessage = "Неудачная попытка входа. Проверьте емейл и пароль";
                     _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, exceptionMessage);
-                    Debug.Log($"{CommandKeys.FailedLogin}, {exceptionMessage}");
+                    
                 }
             }
         }
@@ -129,21 +129,21 @@ public class DecodingData
                     }
                     else
                     {
-                        LogProcessor.ProcessLog(FWL.GetClassName(), $"Не найден обработчик под полученный ключ: {keyType}");
-                        Debug.Log($"Не найден обработчик под полученный ключ: {keyType}");
+                        //LogProcessor.ProcessLog(FWL.GetClassName(), $"Не найден обработчик под полученный ключ: {keyType}");
+                        //Debug.Log($"Не найден обработчик под полученный ключ: {keyType}");
                     }
                 }
                 catch (Exception ex)
                 {
-                    LogProcessor.ProcessLog(FWL.GetClassName(), $"Ошибка десериализации объекта: {ex.Message}");
-                    Debug.Log($"Ошибка десериализации объекта: {ex.Message}");
+                    //LogProcessor.ProcessLog(FWL.GetClassName(), $"Ошибка десериализации объекта: {ex.Message}");
+                    //Debug.Log($"Ошибка десериализации объекта: {ex.Message}");
                 }
             });
         }
         catch (Exception ex)
         {
-            LogProcessor.ProcessLog(FWL.GetClassName(), $"Ошибка обработки полученного пакета: {ex.Message}");
-            Debug.Log($"Ошибка обработки полученного пакета: {ex.Message}");
+            //LogProcessor.ProcessLog(FWL.GetClassName(), $"Ошибка обработки полученного пакета: {ex.Message}");
+            //Debug.Log($"Ошибка обработки полученного пакета: {ex.Message}");
         }
     }
 }

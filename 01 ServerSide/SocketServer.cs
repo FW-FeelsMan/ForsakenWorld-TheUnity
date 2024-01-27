@@ -68,7 +68,7 @@ public class SocketServer : Singleton<SocketServer>
                     null
                 );
 
-                DecodingData decodingData = new();
+                DecodingData decodingData = new(client);
 
                 HandleClient(client, decodingData);
             }
@@ -106,7 +106,6 @@ public class SocketServer : Singleton<SocketServer>
                     if (bytesRead > 0)
                     {
                         _ = Task.Run(() => decodingData.ProcessPacketAsync(buffer));
-                        Debug.Log("Привет, отладка!");
                     }
                 }
                 catch (Exception ex)
@@ -136,7 +135,7 @@ public class SocketServer : Singleton<SocketServer>
         client.Close();
     }
 
-    public async Task SendDataAsync(byte[] data)
+    /*public async Task SendDataAsync(byte[] data)
     {
         foreach (var client in connectedClients)
         {
@@ -151,7 +150,7 @@ public class SocketServer : Singleton<SocketServer>
                 Debug.Log($"Ошибка отправки данных клиенту: {ex}");
             }
         }
-    }
+    }*/
 
     private void OnDestroy()
     {

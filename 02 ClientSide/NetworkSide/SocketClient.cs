@@ -13,12 +13,15 @@ public class SocketClient : Singleton<SocketClient>
     private UIManager uiManager;
     private PingManager pingManager;
     private ConnectionDataLoader connectionDataLoader;
+    private DecodingDataFromServer decodingDataFromServer;
 
     private void Start()
     {
         uiManager = GetComponent<UIManager>();
         connectionDataLoader = gameObject.AddComponent<ConnectionDataLoader>();
         connectionDataLoader.LoadConnectionData();
+
+        decodingDataFromServer = gameObject.AddComponent<DecodingDataFromServer>();
 
         uiManager.CanvasLoadingScreen.enabled = false;
         uiManager.Menu_Environment.SetActive(false);
@@ -114,9 +117,9 @@ public class SocketClient : Singleton<SocketClient>
 
                 if (length > 0)
                 {                    
-                    Debug.Log($"Ответ от сервера: {BitConverter.ToString(responseBuffer)}");
-                    DecodingDataFromServer decodingDataFromServer = new();
-                     _ = Task.Run(() => decodingDataFromServer.ProcessPacketAsync(responseBuffer));
+                    Debug.Log($"Ответ от сервера: ");
+
+                    await decodingDataFromServer.ProcessPacketAsync(responseBuffer);
                 }
                 else
                 {
