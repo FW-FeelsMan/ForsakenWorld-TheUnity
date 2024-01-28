@@ -135,23 +135,6 @@ public class SocketServer : Singleton<SocketServer>
         client.Close();
     }
 
-    /*public async Task SendDataAsync(byte[] data)
-    {
-        foreach (var client in connectedClients)
-        {
-            try
-            {
-                using NetworkStream networkStream = new(client);
-                await networkStream.WriteAsync(data, 0, data.Length);
-                Debug.Log($"Отправлены данные: {BitConverter.ToString(data)}");
-            }
-            catch (Exception ex)
-            {
-                Debug.Log($"Ошибка отправки данных клиенту: {ex}");
-            }
-        }
-    }*/
-
     private void OnDestroy()
     {
         StopServer();

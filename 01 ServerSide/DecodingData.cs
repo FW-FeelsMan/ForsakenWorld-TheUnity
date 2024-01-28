@@ -58,7 +58,7 @@ public class DecodingData
                     {
                         dataHandler.SetClientStatus(email, 1);
                         string responseMessage = "Добро пожаловать!";
-                        _ = answerToClient.ServerResponseWrapper(CommandKeys.LoginRequest, responseMessage);
+                        _ = answerToClient.ServerResponseWrapper(CommandKeys.SuccessfulLogin, responseMessage);
                     }
                 }
                 else

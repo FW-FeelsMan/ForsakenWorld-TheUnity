@@ -8,7 +8,6 @@ using UnityEngine;
 
 public class DecodingDataFromServer : MonoBehaviour
 {
-    private readonly Action<object> defaultHandler = (obj) => Debug.Log($"Unhandled object: {obj}");
 
     private readonly Dictionary<string, Action<object>> handlers = new();
 
@@ -19,8 +18,8 @@ public class DecodingDataFromServer : MonoBehaviour
 
     private void PacketHandlers()
     {
-        RegisterResponse(CommandKeys.LoginRequest, HandleLoginResponse);
-        RegisterResponse(CommandKeys.RegistrationRequest, HandleRegistrationResponse);
+        RegisterResponse(CommandKeys.SuccessfulLogin, HandleLoginResponse);
+        RegisterResponse(CommandKeys.FailedRegistration, HandleRegistrationResponse);
     }
 
     private void RegisterResponse(string keyType, Action<object> handler)
@@ -40,7 +39,7 @@ public class DecodingDataFromServer : MonoBehaviour
     }
     private void HandleRegistrationResponse(object dataObject)
     {
-
+        Debug.Log($"Ошибка регистрации");
     }
 
     public async Task ProcessPacketAsync(byte[] packet)
