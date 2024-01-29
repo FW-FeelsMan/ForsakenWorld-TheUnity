@@ -18,8 +18,8 @@ public class DecodingDataFromServer : MonoBehaviour
 
     private void PacketHandlers()
     {
-        RegisterResponse(CommandKeys.SuccessfulLogin, HandleLoginResponse);
-        RegisterResponse(CommandKeys.FailedRegistration, HandleRegistrationResponse);
+        RegisterResponse(CommandKeys.SuccessfulLogin, ResponseProcessing);
+        RegisterResponse(CommandKeys.FailedRegistration, ResponseProcessing);
     }
 
     private void RegisterResponse(string keyType, Action<object> handler)
@@ -27,7 +27,7 @@ public class DecodingDataFromServer : MonoBehaviour
         handlers[keyType] = handler;
     }
 
-    private void HandleLoginResponse(object dataObject)
+    private void ResponseProcessing(object dataObject)
     {
         if (dataObject is GlobalDataClasses.ServerResponseMessage responseData)
         {
@@ -36,10 +36,6 @@ public class DecodingDataFromServer : MonoBehaviour
 
             Debug.Log($"Получено: \n Ключ {_key}; \n Сообщение: {_message}");
         }
-    }
-    private void HandleRegistrationResponse(object dataObject)
-    {
-        Debug.Log($"Ошибка регистрации");
     }
 
     public async Task ProcessPacketAsync(byte[] packet)

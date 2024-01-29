@@ -3,8 +3,9 @@ using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using UnityEngine;
 
-public class AnswerToClient 
+public class AnswerToClient : MonoBehaviour
 {
     private readonly Socket clientSocket;
 
@@ -25,7 +26,8 @@ public class AnswerToClient
             KeyType = keyType,
             Message = message
         };
-
+        Debug.Log($"Отправлено: {keyType}, {message}");
+        //отпрвляет все кроме ошибки логина и пароля
         await RequestTypeAsync(keyType, dataObject);
     }
 

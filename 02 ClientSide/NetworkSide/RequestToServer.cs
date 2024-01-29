@@ -4,26 +4,23 @@ using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
 using ForsakenWorld;
-using TMPro;
 using UnityEngine;
 public class RequestToServer : MonoBehaviour
 {
-    public TMP_InputField emailLoginField;
-    public TMP_InputField passwordLoginField;
-    public TMP_InputField reg_emailLoginField;
-    public TMP_InputField reg_passwordLoginField;
-    public TMP_InputField reg_passwordConfirm;
     private UIManager uIManager;
+    private UserInputManager userInputManager;
 
     void Start()
     {
         uIManager = GetComponent<UIManager>();
+        userInputManager = GetComponent<UserInputManager>();
     }
 
     public void OnLoginButtonClicked()
     {
         StartCoroutine(UserDataWrapper(CommandKeys.LoginRequest));
     }
+
     public void OnRegistrationButtonClicked()
     {
         StartCoroutine(UserDataWrapper(CommandKeys.RegistrationRequest));
@@ -34,53 +31,26 @@ public class RequestToServer : MonoBehaviour
         bool isValid = true;
         string errorMessage = "";
 
-        string email = "";
-        string password = "";
+        UserInput userInput = userInputManager.GetUserInput(keyType);
 
-        if (keyType == CommandKeys.LoginRequest)
-        {
-            if (!EmailValidator.IsValidEmail(emailLoginField.text))
-            {
-                isValid = false;
-                errorMessage = "Некорректный емейл!";
-            }
-            else if (string.IsNullOrWhiteSpace(emailLoginField.text) || string.IsNullOrWhiteSpace(passwordLoginField.text))
-            {
-                isValid = false;
-                errorMessage = "Поля емейла и пароля не могут быть пустыми!";
-            }
-            
-            email = emailLoginField.text;
-            password = passwordLoginField.text;
-        }
-        else if (keyType == CommandKeys.RegistrationRequest)
-        {
-            if (!EmailValidator.IsValidEmail(reg_emailLoginField.text))
-            {
-                isValid = false;
-                errorMessage = "Некорректный емейл!";
-            }
-            else
-            {
-                if (!EmailValidator.IsValidPassword(reg_passwordLoginField.text))
-                {
-                    isValid = false;
-                    errorMessage = "Пароль менее 6 символов или содержит недопустимые символы!";
-                }
-                else if (reg_passwordLoginField.text != reg_passwordConfirm.text)
-                {
-                    isValid = false;
-                    errorMessage = "Пароли не совпадают!";
-                }
-            }
-
-            email = reg_emailLoginField.text;
-            password = reg_passwordLoginField.text;
-        }
-        else
+        if (userInput == null)
         {
             isValid = false;
             errorMessage = "Неизвестный тип запроса!";
+        }
+
+        if (keyType == CommandKeys.LoginRequest && !EmailValidator.IsValidEmail(userInput.Email))
+        {
+            isValid = false;
+            errorMessage = "Некорректный емейл!";
+        }
+        else if (keyType == CommandKeys.RegistrationRequest &&
+                (!EmailValidator.IsValidEmail(userInput.Email) ||
+                 !EmailValidator.IsValidPassword(userInput.Password) ||
+                 userInput.Password != userInput.ConfirmPassword))
+        {
+            isValid = false;
+            errorMessage = "Поля заполнены некорректно!";
         }
 
         if (!isValid)
@@ -89,7 +59,7 @@ public class RequestToServer : MonoBehaviour
         }
         else
         {
-            var task = UserData(keyType, email, password);
+            var task = UserData(keyType, userInput.Email, userInput.Password);
             yield return new WaitUntil(() => task.IsCompleted);
         }
     }
@@ -136,7 +106,7 @@ public class RequestToServer : MonoBehaviour
         }
         catch (Exception ex)
         {
-            
+
             LogProcessor.ProcessLog(FWL.GetClassName(), $"Error in RequestTypeAsync: {ex.Message}");
             return null;
         }

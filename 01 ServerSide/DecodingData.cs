@@ -4,8 +4,9 @@ using System.IO;
 using System.Net.Sockets;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
+using UnityEngine;
 
-public class DecodingData 
+public class DecodingData : MonoBehaviour
 {
     private readonly Dictionary<string, Action<object>> handlers = new();
     private readonly AnswerToClient answerToClient;
@@ -37,6 +38,7 @@ public class DecodingData
             string hardwareID = userData.HardwareID;
             DateTime lastLoginDate = DateTime.Now;
 
+            //проверка данных на null
             if (email == null || hashedPassword == null || hardwareID == null)
             {
                 _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, GlobalStrings.IncorrectData);
@@ -52,7 +54,6 @@ public class DecodingData
                     if (dataHandler._isUserActive)
                     {
                         _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, GlobalStrings.UserIsAlreadyOnline);
-                        
                     }
                     else
                     {
@@ -63,13 +64,21 @@ public class DecodingData
                 }
                 else
                 {
+                    //ошибка логики посторения условий. Не отправляет данный код
                     string exceptionMessage = "Неудачная попытка входа. Проверьте емейл и пароль";
                     _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, exceptionMessage);
-                    
+                    //Debug.Log("Отправлена ошибка валидности данных");
                 }
             }
         }
+        else
+        {
+            // Отправить ответ клиенту, что логин неверен
+            string exceptionMessage = "Неверный логин или пароль";
+            _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, exceptionMessage);
+        }
     }
+
 
     private void HandleRegistrationRequest(object dataObject)
     {
@@ -125,7 +134,7 @@ public class DecodingData
                     if (handlers.TryGetValue(keyType, out var handler))
                     {
                         object dataObject = formatter.Deserialize(memoryStream);
-                        handler(dataObject);                        
+                        handler(dataObject);
                     }
                     else
                     {
