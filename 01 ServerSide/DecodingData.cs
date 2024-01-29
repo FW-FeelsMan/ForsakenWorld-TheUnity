@@ -38,7 +38,6 @@ public class DecodingData : MonoBehaviour
             string hardwareID = userData.HardwareID;
             DateTime lastLoginDate = DateTime.Now;
 
-            //проверка данных на null
             if (email == null || hashedPassword == null || hardwareID == null)
             {
                 _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, GlobalStrings.IncorrectData);
@@ -62,7 +61,6 @@ public class DecodingData : MonoBehaviour
                         _ = answerToClient.ServerResponseWrapper(CommandKeys.SuccessfulLogin, responseMessage);
                     }
                 }
-                //если данные НЕ существуют то отправить ошибку
                 else
                 {
                     string exceptionMessage = "Неудачная попытка входа. Проверьте емейл и пароль";
