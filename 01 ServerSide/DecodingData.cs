@@ -62,19 +62,17 @@ public class DecodingData : MonoBehaviour
                         _ = answerToClient.ServerResponseWrapper(CommandKeys.SuccessfulLogin, responseMessage);
                     }
                 }
+                //если данные НЕ существуют то отправить ошибку
                 else
                 {
-                    //ошибка логики посторения условий. Не отправляет данный код
                     string exceptionMessage = "Неудачная попытка входа. Проверьте емейл и пароль";
                     _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, exceptionMessage);
-                    //Debug.Log("Отправлена ошибка валидности данных");
                 }
             }
         }
         else
         {
-            // Отправить ответ клиенту, что логин неверен
-            string exceptionMessage = "Неверный логин или пароль";
+            string exceptionMessage = "Ошибка обработки входящих данных";
             _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, exceptionMessage);
         }
     }

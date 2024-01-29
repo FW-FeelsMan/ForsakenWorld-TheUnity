@@ -18,7 +18,7 @@ public class DataHandler
         getUserCommand.Parameters.AddWithValue("@email", email);
         object result = getUserCommand.ExecuteScalar();
 
-        if (result != null && (string)result != hashedPassword)
+        if (result == null || (string)result != hashedPassword)
         {
             return false;
         }
