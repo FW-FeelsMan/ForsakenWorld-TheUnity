@@ -5,6 +5,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
 using ForsakenWorld;
 using UnityEngine;
+
 public class RequestToServer : MonoBehaviour
 {
     private UIManager uIManager;
@@ -36,21 +37,36 @@ public class RequestToServer : MonoBehaviour
         if (userInput == null)
         {
             isValid = false;
-            errorMessage = "Неизвестный тип запроса!";
+            errorMessage = GlobalStrings.UnknownRequestType;
         }
 
         if (keyType == CommandKeys.LoginRequest && !EmailValidator.IsValidEmail(userInput.Email))
         {
             isValid = false;
-            errorMessage = "Некорректный емейл!";
+            errorMessage = GlobalStrings.IncorrectEmail;
         }
-        else if (keyType == CommandKeys.RegistrationRequest &&
-                (!EmailValidator.IsValidEmail(userInput.Email) ||
-                 !EmailValidator.IsValidPassword(userInput.Password) ||
-                 userInput.Password != userInput.ConfirmPassword))
+        else if (keyType == CommandKeys.RegistrationRequest)
         {
-            isValid = false;
-            errorMessage = "Поля заполнены некорректно!";
+            if (!EmailValidator.IsValidEmail(userInput.Email))
+            {
+                isValid = false;
+                errorMessage = GlobalStrings.IncorrectEmail;
+            }
+            else if (!EmailValidator.IsValidPassword(userInput.Password))
+            {
+                isValid = false;
+                errorMessage = GlobalStrings.IncorrectPassword;
+            }
+            else if (userInput.Password != userInput.ConfirmPassword)
+            {
+                isValid = false;
+                errorMessage = GlobalStrings.PasswordMismatch;
+            }
+            else if (!userInputManager.ConditionTerminsCheck.isOn)
+            {
+                isValid = false;
+                errorMessage = GlobalStrings.UserAgreementFail;
+            }
         }
 
         if (!isValid)
@@ -106,7 +122,6 @@ public class RequestToServer : MonoBehaviour
         }
         catch (Exception ex)
         {
-
             LogProcessor.ProcessLog(FWL.GetClassName(), $"Error in RequestTypeAsync: {ex.Message}");
             return null;
         }

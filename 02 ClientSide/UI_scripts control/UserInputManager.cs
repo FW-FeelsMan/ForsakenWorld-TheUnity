@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro;
+using UnityEngine.UI;
 
 public class UserInputManager : MonoBehaviour
 {
@@ -8,6 +9,7 @@ public class UserInputManager : MonoBehaviour
     public TMP_InputField reg_emailLoginField;
     public TMP_InputField reg_passwordLoginField;
     public TMP_InputField reg_passwordConfirm;
+    public Toggle ConditionTerminsCheck;
 
     public UserInput GetUserInput(string keyType)
     {
