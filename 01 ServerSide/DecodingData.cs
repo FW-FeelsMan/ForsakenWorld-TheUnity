@@ -36,7 +36,6 @@ public class DecodingData : MonoBehaviour
             string email = userData.Email;
             string hashedPassword = userData.HashedPassword;
             string hardwareID = userData.HardwareID;
-            DateTime lastLoginDate = DateTime.Now;
 
             if (email == null || hashedPassword == null || hardwareID == null)
             {
@@ -44,7 +43,7 @@ public class DecodingData : MonoBehaviour
             }
             else
             {
-                bool loginResult = dataHandler.HandleLoginData(email, hashedPassword, hardwareID, lastLoginDate);
+                bool loginResult = dataHandler.HandleLoginData(email, hashedPassword, hardwareID);
 
                 if (loginResult)
                 {
@@ -57,21 +56,18 @@ public class DecodingData : MonoBehaviour
                     else
                     {
                         dataHandler.SetClientStatus(email, 1);
-                        string responseMessage = "Добро пожаловать!";
-                        _ = answerToClient.ServerResponseWrapper(CommandKeys.SuccessfulLogin, responseMessage);
+                        _ = answerToClient.ServerResponseWrapper(CommandKeys.SuccessfulLogin, GlobalStrings.WelcomeMessage);
                     }
                 }
                 else
                 {
-                    string exceptionMessage = "Неудачная попытка входа. Проверьте емейл и пароль";
-                    _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, exceptionMessage);
+                    _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, GlobalStrings.FailedLogin);
                 }
             }
         }
         else
         {
-            string exceptionMessage = "Ошибка обработки входящих данных";
-            _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, exceptionMessage);
+            _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, GlobalStrings.UnknownPackage);
         }
     }
 
@@ -83,26 +79,22 @@ public class DecodingData : MonoBehaviour
             string email = userData.Email;
             string hashedPassword = userData.HashedPassword;
             string hardwareID = userData.HardwareID;
-            DateTime lastLoginDate = DateTime.Now;
 
             if (email == null || hashedPassword == null || hardwareID == null)
             {
-                string exceptionMessage = "Некорректные данные";
-                _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedRegistration, exceptionMessage);
+                _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedRegistration, GlobalStrings.IncorrectData);
             }
             else
             {
-                bool registerResult = dataHandler.HandleRegistrationData(email, hashedPassword, hardwareID, lastLoginDate);
+                bool registerResult = dataHandler.HandleRegistrationData(email, hashedPassword, hardwareID);
 
                 if (registerResult)
                 {
-                    string responseMessage = "Регистрация успешна";
-                    _ = answerToClient.ServerResponseWrapper(CommandKeys.SuccessfulRegistration, responseMessage);
+                    _ = answerToClient.ServerResponseWrapper(CommandKeys.SuccessfulRegistration, GlobalStrings.SuccessfulRegistration);
                 }
                 else
                 {
-                    string exceptionMessage = "Указанный емейл уже зарегистрирован";
-                    _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedRegistration, exceptionMessage);
+                    _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedRegistration, GlobalStrings.RegistrationErrorEmailExists);
                 }
             }
         }
@@ -122,33 +114,19 @@ public class DecodingData : MonoBehaviour
             {
                 using MemoryStream memoryStream = new(packet);
                 var formatter = new BinaryFormatter();
+                string keyType = (string)formatter.Deserialize(memoryStream);
 
-                try
+                if (handlers.TryGetValue(keyType, out var handler))
                 {
-                    string keyType = (string)formatter.Deserialize(memoryStream);
-
-                    if (handlers.TryGetValue(keyType, out var handler))
-                    {
-                        object dataObject = formatter.Deserialize(memoryStream);
-                        handler(dataObject);
-                    }
-                    else
-                    {
-                        //LogProcessor.ProcessLog(FWL.GetClassName(), $"Не найден обработчик под полученный ключ: {keyType}");
-                        //Debug.Log($"Не найден обработчик под полученный ключ: {keyType}");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    //LogProcessor.ProcessLog(FWL.GetClassName(), $"Ошибка десериализации объекта: {ex.Message}");
-                    //Debug.Log($"Ошибка десериализации объекта: {ex.Message}");
+                    object dataObject = formatter.Deserialize(memoryStream);
+                    handler(dataObject);
                 }
             });
         }
         catch (Exception ex)
         {
-            //LogProcessor.ProcessLog(FWL.GetClassName(), $"Ошибка обработки полученного пакета: {ex.Message}");
-            //Debug.Log($"Ошибка обработки полученного пакета: {ex.Message}");
+             Debug.Log($"Ошибка обработки пакета: {ex.Message}");
         }
     }
+
 }

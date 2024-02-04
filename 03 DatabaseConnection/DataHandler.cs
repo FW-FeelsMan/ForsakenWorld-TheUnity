@@ -9,7 +9,7 @@ public class DataHandler
     private string loggedInUserEmail;
     public bool _isUserActive;
 
-    public bool HandleLoginData(string email, string hashedPassword, string hardwareID, DateTime lastLoginDate)
+    public bool HandleLoginData(string email, string hashedPassword, string hardwareID)
     {
         using MySqlConnection connection = CreateConnection();
 
@@ -25,13 +25,13 @@ public class DataHandler
 
         UpdateDeviceId(email, hardwareID);
 
-        WriteIDFile(email, hardwareID, lastLoginDate);
+        WriteIDFile(email, hardwareID, DateTime.Now);
         loggedInUserEmail = email;
 
         return true;
     }
 
-    public bool HandleRegistrationData(string email, string hashedPassword, string hardwareID, DateTime lastLoginDate)
+    public bool HandleRegistrationData(string email, string hashedPassword, string hardwareID)
     {
         using MySqlConnection connection = CreateConnection();
 
@@ -50,7 +50,7 @@ public class DataHandler
         insertCommand.Parameters.AddWithValue("@Email", email);
         insertCommand.Parameters.AddWithValue("@Password", hashedPassword);
         insertCommand.Parameters.AddWithValue("@DeviceId", hardwareID);
-        insertCommand.Parameters.AddWithValue("@LastLoginDate", lastLoginDate);
+        insertCommand.Parameters.AddWithValue("@LastLoginDate", DateTime.Now);
 
         int affectedRowsCount = insertCommand.ExecuteNonQuery();
 
@@ -62,7 +62,7 @@ public class DataHandler
             getIdCommand.Parameters.AddWithValue("@Email", email);
             string userId = getIdCommand.ExecuteScalar().ToString();
 
-            CreateIDFile(userId, hardwareID, lastLoginDate);
+            CreateIDFile(userId, hardwareID, DateTime.Now);
             SetClientStatus(email, 0);
 
             return true;

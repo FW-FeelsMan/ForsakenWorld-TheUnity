@@ -20,6 +20,7 @@ public class DecodingDataFromServer : MonoBehaviour
     {
         RegisterResponse(CommandKeys.SuccessfulLogin, ResponseProcessing);
         RegisterResponse(CommandKeys.FailedRegistration, ResponseProcessing);
+        RegisterResponse(CommandKeys.FailedLogin, ResponseProcessing);
     }
 
     private void RegisterResponse(string keyType, Action<object> handler)
@@ -34,7 +35,7 @@ public class DecodingDataFromServer : MonoBehaviour
             string _key = responseData.KeyType;
             string _message = responseData.Message;
 
-            Debug.Log($"Получено: \n Ключ {_key}; \n Сообщение: {_message}");
+            Debug.Log($"Получено: \nКлюч {_key}; \nСообщение: {_message}");
         }
     }
 

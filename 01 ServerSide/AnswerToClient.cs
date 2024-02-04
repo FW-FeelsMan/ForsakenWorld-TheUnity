@@ -27,7 +27,7 @@ public class AnswerToClient : MonoBehaviour
             Message = message
         };
         Debug.Log($"Отправлено: {keyType}, {message}");
-        //отпрвляет все кроме ошибки логина и пароля
+
         await RequestTypeAsync(keyType, dataObject);
     }
 
@@ -53,9 +53,9 @@ public class AnswerToClient : MonoBehaviour
 
             await SendDataAsync(requestData);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            
+            CloseClientSocket();
         }
     }
 
@@ -67,7 +67,7 @@ public class AnswerToClient : MonoBehaviour
             await networkStream.WriteAsync(data, 0, data.Length);
            
         }
-        catch (Exception ex)
+        catch (Exception)
         {      
             CloseClientSocket();
         }
@@ -80,7 +80,7 @@ public class AnswerToClient : MonoBehaviour
             clientSocket.Shutdown(SocketShutdown.Both);
             clientSocket.Close();
         }
-        catch (Exception closeEx)
+        catch (Exception)
         {
             
         }
