@@ -117,8 +117,6 @@ public class SocketClient : Singleton<SocketClient>
 
                 if (length > 0)
                 {                    
-                    Debug.Log($"Ответ от сервера: ");
-
                     await decodingDataFromServer.ProcessPacketAsync(responseBuffer);
                 }
                 else

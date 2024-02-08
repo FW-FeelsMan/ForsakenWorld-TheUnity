@@ -9,7 +9,7 @@ public class DataHandler
     private string loggedInUserEmail;
     public bool _isUserActive;
 
-    public bool HandleLoginData(string email, string hashedPassword, string hardwareID)
+    public bool HandleLoginData(string email, string hashedPassword, string hardwareID, bool forceLoginRequested)
     {
         using MySqlConnection connection = CreateConnection();
 

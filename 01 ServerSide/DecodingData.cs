@@ -36,6 +36,7 @@ public class DecodingData : MonoBehaviour
             string email = userData.Email;
             string hashedPassword = userData.HashedPassword;
             string hardwareID = userData.HardwareID;
+            bool forceLoginRequested = userData.ForceLoginRequested;
 
             if (email == null || hashedPassword == null || hardwareID == null)
             {
@@ -43,7 +44,7 @@ public class DecodingData : MonoBehaviour
             }
             else
             {
-                bool loginResult = dataHandler.HandleLoginData(email, hashedPassword, hardwareID);
+                bool loginResult = dataHandler.HandleLoginData(email, hashedPassword, hardwareID, forceLoginRequested);
 
                 if (loginResult)
                 {
@@ -55,8 +56,15 @@ public class DecodingData : MonoBehaviour
                     }
                     else
                     {
+                        if (forceLoginRequested)
+                        {
+                            // Вызвать метод поиска компьютеров на которых данная учетная запись онлайн
+                            // Возможно это можно реализовать через SocketServer
+                            // Отсоеденить их от сервера
+                        }
                         dataHandler.SetClientStatus(email, 1);
                         _ = answerToClient.ServerResponseWrapper(CommandKeys.SuccessfulLogin, GlobalStrings.WelcomeMessage);
+                        Debug.Log(forceLoginRequested);
                     }
                 }
                 else
@@ -125,7 +133,7 @@ public class DecodingData : MonoBehaviour
         }
         catch (Exception ex)
         {
-             Debug.Log($"Ошибка обработки пакета: {ex.Message}");
+            Debug.Log($"Ошибка обработки пакета: {ex.Message}");
         }
     }
 

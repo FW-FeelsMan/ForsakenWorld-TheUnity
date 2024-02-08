@@ -10,6 +10,7 @@ public class GlobalDataClasses : MonoBehaviour
         public string Email { get; set; }
         public string HashedPassword { get; set; }
         public string HardwareID { get; set; }
+        public bool ForceLoginRequested {get; set;}
     }
 
     [Serializable]

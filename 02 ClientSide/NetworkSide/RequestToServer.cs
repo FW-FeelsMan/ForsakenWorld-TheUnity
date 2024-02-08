@@ -75,22 +75,22 @@ public class RequestToServer : MonoBehaviour
         }
         else
         {
-            var task = UserData(keyType, userInput.Email, userInput.Password);
+            var task = UserData(keyType, userInput.Email, userInput.Password, userInputManager.forceLoginRequested.isOn);
             yield return new WaitUntil(() => task.IsCompleted);
         }
     }
 
-    public static async Task<byte[]> UserData(string _keyType, string _email, string _password)
+    public static async Task<byte[]> UserData(string _keyType, string _email, string _password, bool _forceLoginRequested)
     {
         var _hashedPassword = GlobalStrings.Hashing(_password);
         var _hardwareID = GlobalStrings.GetHardwareID();
-
         var _dataObject = new GlobalDataClasses.UserDataObject
         {
             KeyType = _keyType,
             Email = _email,
             HashedPassword = _hashedPassword,
-            HardwareID = _hardwareID
+            HardwareID = _hardwareID,
+            ForceLoginRequested = _forceLoginRequested
         };
 
         return await RequestTypeAsync(_keyType, _dataObject);
