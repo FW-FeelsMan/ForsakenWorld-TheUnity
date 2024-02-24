@@ -6,6 +6,7 @@ public static class CommandKeys
     public const string FailedRegistration = "RgFl_#@!"; // Неудачная регистрация
     public const string SuccessfulLogin = "LgSc_#@!"; // Успешный вход
     public const string FailedLogin = "LgFl_#@!"; // Неудачный вход
+    public const string DisconnectKey = "DsCn_#@!"; // Неудачный вход
     public const string Heartbeat = "HBt_#@!"; // Сигнал поддержания соединения (heartbeat)
     public const string Separator = ":";//сепаратор
 }

@@ -10,6 +10,7 @@ public static class GlobalStrings
     public const string ErrorMessageFailedReadData = "Ошибка при чтении данных от сервера.";
     public const string FailedLogin = "Неверный емейл или пароль/Учетная запись не существует";
     public const string FailedLoginMessage = "Неудачная попытка входа. Проверьте емейл и пароль";
+    public const string ForcedLogin = "Соединение прервано! Обнаружен принудительный вход.";
     public const string IncorrectData = "Некорректные данные/Данные содержат недопустимые символы";
     public const string IncorrectEmail = "Некорректный емейл!";
     public const string IncorrectPassword = "Некорректный пароль! Пароль должен содержать только латинские буквы и цифры, и быть не менее 6 символов.";

@@ -12,7 +12,7 @@ public class SocketServer : Singleton<SocketServer>
     public bool isOn;
     private Socket _listener;
     private bool _isListening;
-    private readonly List<Socket> connectedClients = new();
+    public static List<Socket> connectedClients = new();
 
     private void Start()
     {
@@ -129,11 +129,21 @@ public class SocketServer : Singleton<SocketServer>
         connectedClients.Add(client);
     }
 
-    private void RemoveClient(Socket client)
+    public void RemoveClient(Socket client)
     {
         connectedClients.Remove(client);
         client.Close();
     }
+    public void ForceRemoveClient(int socketNum)
+    {
+        Socket clientToRemove = connectedClients.Find(client => ((int)client.Handle.ToInt64()) == socketNum);
+        if (clientToRemove != null)
+        {
+            connectedClients.Remove(clientToRemove);
+            clientToRemove.Close();
+        }
+    }
+
 
     private void OnDestroy()
     {

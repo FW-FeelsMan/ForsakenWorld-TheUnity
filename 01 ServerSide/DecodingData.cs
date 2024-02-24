@@ -11,10 +11,14 @@ public class DecodingData : MonoBehaviour
     private readonly Dictionary<string, Action<object>> handlers = new();
     private readonly AnswerToClient answerToClient;
     private readonly DataHandler dataHandler = new();
+    private readonly int clientSocketNum;
+    public int currentActiveSocketNum;
 
     public DecodingData(Socket clientSocket)
     {
         answerToClient = new AnswerToClient(clientSocket);
+        IntPtr handle = clientSocket.Handle;
+        clientSocketNum = handle.ToInt32();
         PacketHandlers();
     }
 
@@ -31,53 +35,72 @@ public class DecodingData : MonoBehaviour
 
     private void HandleLoginRequest(object dataObject)
     {
-        if (dataObject is GlobalDataClasses.UserDataObject userData)
+        if (!(dataObject is GlobalDataClasses.UserDataObject userData))
         {
-            string email = userData.Email;
-            string hashedPassword = userData.HashedPassword;
-            string hardwareID = userData.HardwareID;
-            bool forceLoginRequested = userData.ForceLoginRequested;
+            _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, GlobalStrings.UnknownPackage);
+            return;
+        }
 
-            if (email == null || hashedPassword == null || hardwareID == null)
-            {
-                _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, GlobalStrings.IncorrectData);
-            }
-            else
-            {
-                bool loginResult = dataHandler.HandleLoginData(email, hashedPassword, hardwareID, forceLoginRequested);
+        string email = userData.Email;
+        string hashedPassword = userData.HashedPassword;
+        string hardwareID = userData.HardwareID;
+        bool forceLoginRequested = userData.ForceLoginRequested;
 
-                if (loginResult)
+        if (email == null || hashedPassword == null || hardwareID == null)
+        {
+            _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, GlobalStrings.IncorrectData);
+            return;
+        }
+
+        bool loginResult = dataHandler.HandleLoginData(email, hashedPassword, hardwareID);
+
+        if (!loginResult)
+        {
+            _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, GlobalStrings.FailedLogin);
+            return;
+        }
+
+        if (!int.TryParse(dataHandler.IsUserActive(email), out int status))
+        {
+            Debug.Log($"{status} Не удалось преобразовать статус в целое число");
+            return;
+        }
+
+        if (status == 1)
+        {
+            if (forceLoginRequested)
+            {
+                GetClientSocket(email);
+                if (clientSocketNum != currentActiveSocketNum)
                 {
-                    dataHandler.IsUserActive(email);
+                    Socket clientSocket = SocketServer.connectedClients.Find(socket => ((int)socket.Handle) == currentActiveSocketNum);
 
-                    if (dataHandler._isUserActive)
+                    if (clientSocket != null)
                     {
-                        _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, GlobalStrings.UserIsAlreadyOnline);
+                        SocketServer.Instance.RemoveClient(clientSocket);
+                        Debug.Log($"Произошел принудительный вход");
+                        _ = answerToClient.ServerResponseWrapper(CommandKeys.DisconnectKey, GlobalStrings.ForcedLogin);
+                        return;
                     }
                     else
                     {
-                        if (forceLoginRequested)
-                        {
-                            // Вызвать метод поиска компьютеров на которых данная учетная запись онлайн
-                            // Возможно это можно реализовать через SocketServer
-                            // Отсоеденить их от сервера
-                        }
-                        dataHandler.SetClientStatus(email, 1);
-                        _ = answerToClient.ServerResponseWrapper(CommandKeys.SuccessfulLogin, GlobalStrings.WelcomeMessage);
-                        Debug.Log(forceLoginRequested);
+                        Debug.LogError($"Socket с номером {currentActiveSocketNum} не найден.");
                     }
                 }
-                else
-                {
-                    _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, GlobalStrings.FailedLogin);
-                }
+            }
+            else
+            {
+                _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, GlobalStrings.UserIsAlreadyOnline);
+                return;
             }
         }
-        else
-        {
-            _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, GlobalStrings.UnknownPackage);
-        }
+
+        dataHandler.SetClientStatus(email, 1);
+        dataHandler.SetSocketClient(email, clientSocketNum);
+        _ = answerToClient.ServerResponseWrapper(CommandKeys.SuccessfulLogin, GlobalStrings.WelcomeMessage);
     }
+
+
 
 
     private void HandleRegistrationRequest(object dataObject)
@@ -113,28 +136,35 @@ public class DecodingData : MonoBehaviour
         var emailUserInLogged = dataHandler.GetLoggedInUserEmail();
         dataHandler.SetClientStatus(emailUserInLogged, 0);
     }
+    public void GetClientSocket(string email)
+    {
+        int socketNum = dataHandler.GetClientSocketNum(email);
+        currentActiveSocketNum = socketNum;
+    }
 
     public async Task ProcessPacketAsync(byte[] packet)
     {
         try
         {
-            await Task.Run(() =>
-            {
-                using MemoryStream memoryStream = new(packet);
-                var formatter = new BinaryFormatter();
-                string keyType = (string)formatter.Deserialize(memoryStream);
+            using MemoryStream memoryStream = new MemoryStream(packet);
+            var formatter = new BinaryFormatter();
+            string keyType = (string)formatter.Deserialize(memoryStream);
 
-                if (handlers.TryGetValue(keyType, out var handler))
-                {
-                    object dataObject = formatter.Deserialize(memoryStream);
-                    handler(dataObject);
-                }
-            });
+            if (handlers.TryGetValue(keyType, out var handler))
+            {
+                object dataObject = formatter.Deserialize(memoryStream);
+
+                // Вместо Task.Run используем асинхронный вызов внутри главного потока Unity
+                await Task.Yield(); // Освобождаем поток на одну итерацию цикла обновления
+
+                handler(dataObject);
+            }
         }
         catch (Exception ex)
         {
             Debug.Log($"Ошибка обработки пакета: {ex.Message}");
         }
     }
+
 
 }

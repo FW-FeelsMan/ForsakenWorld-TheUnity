@@ -9,7 +9,7 @@ public class DataHandler
     private string loggedInUserEmail;
     public bool _isUserActive;
 
-    public bool HandleLoginData(string email, string hashedPassword, string hardwareID, bool forceLoginRequested)
+    public bool HandleLoginData(string email, string hashedPassword, string hardwareID)
     {
         using MySqlConnection connection = CreateConnection();
 
@@ -79,6 +79,15 @@ public class DataHandler
         command.Parameters.AddWithValue("@Email", email);
         command.ExecuteNonQuery();
     }
+    public void SetSocketClient(string email, int socketClient)
+    {
+        using MySqlConnection connection = CreateConnection();
+        string query = "UPDATE user_data SET socketClient = @socketClient WHERE email = @Email";
+        MySqlCommand command = new(query, connection);
+        command.Parameters.AddWithValue("@socketClient", socketClient);
+        command.Parameters.AddWithValue("@Email", email);
+        command.ExecuteNonQuery();
+    }
     private void UpdateDeviceId(string email, string hardwareID)
     {
         using MySqlConnection connection = CreateConnection();
@@ -88,15 +97,26 @@ public class DataHandler
         command.Parameters.AddWithValue("@Email", email);
         command.ExecuteNonQuery();
     }
-    public void IsUserActive(string email)
+    public string IsUserActive(string email)
     {
-        using MySqlConnection connection = CreateConnection();
-        string getStatusQuery = "SELECT status FROM user_data WHERE email = @Email";
-        MySqlCommand getStatusCommand = new(getStatusQuery, connection);
-        getStatusCommand.Parameters.AddWithValue("@Email", email);
-        object result = getStatusCommand.ExecuteScalar();
+        string status = "-1"; // ѕо умолчанию устанавливаем неопределенный статус
 
-        _isUserActive = (bool)result;
+        using (MySqlConnection connection = CreateConnection())
+        {
+            string getStatusQuery = "SELECT status FROM user_data WHERE email = @Email";
+            MySqlCommand getStatusCommand = new MySqlCommand(getStatusQuery, connection);
+            getStatusCommand.Parameters.AddWithValue("@Email", email);
+
+            object result = getStatusCommand.ExecuteScalar();
+
+            if (result != null)
+            {
+                // ѕреобразуем значение статуса в строку "1" или "0" и возвращаем
+                status = (Convert.ToInt32(result) == 1) ? "1" : "0";
+            }
+
+            return status;
+        }
     }
 
 
@@ -150,4 +170,33 @@ public class DataHandler
     {
         return loggedInUserEmail;
     }
+    public int GetClientSocketNum(string email)
+    {
+        int socketClient = -1; // вернуть -1 если сокета нет
+
+        using (MySqlConnection connection = CreateConnection())
+        {
+            string query = "SELECT socketClient FROM user_data WHERE email = @Email";
+            MySqlCommand command = new MySqlCommand(query, connection);
+            command.Parameters.AddWithValue("@Email", email);
+
+            // ѕопытка выполнени€ запроса и чтени€ значени€ сокета из базы данных
+            try
+            {
+                object result = command.ExecuteScalar();
+                if (result != null && result != DBNull.Value)
+                {
+                    socketClient = Convert.ToInt32(result);
+                }
+            }
+            catch (Exception ex)
+            {
+                // ќбработка ошибки, если запрос не удалс€
+                LogProcessor.ProcessLog(FWL.GetClassName(), $"ќшибка при получении сокета: {ex.Message}");
+            }
+        }
+
+        return socketClient;
+    }
+
 }
