@@ -16,14 +16,18 @@ public class UIManager : MonoBehaviour
     public GameObject[] ImageResult;
     private int currentIndex = 0;
 
+    public static UIManager instance;
+
+    private void Awake()
+    {
+        instance = this;
+    }
 
     public void DisplayError(string errorMsg)
     {
         SetCurrentIndex(0);
         CanvasLoadingScreen.enabled = true;
         LoadingScreenResult.text = errorMsg;
-        LoadingScreenButton.SetActive(true);
-
         LoadingScreenButton.SetActive(true);
         if (errorMsg == "Соединение с сервером потеряно")
         {
@@ -78,21 +82,13 @@ public class UIManager : MonoBehaviour
         LoadingScreenButton.SetActive(false);
         graphicCanvasEnabledLogin.enabled = false;
     }
-    public void DisplayConfirmReg()
+
+    public void DisplayAnswer(int _index, string _message)
     {
-        SetCurrentIndex(2);
+        SetCurrentIndex(_index);
         CanvasLoadingScreen.enabled = true;
         LoadingScreenButton.SetActive(true);
-        LoadingScreenResult.text = "Регистрация успешно завершена";
-        graphicCanvasEnabledLogin.enabled = false;
-    }
-    public void DisplayUnknowPacket()
-    {
-        SetCurrentIndex(0);
-        CanvasLoadingScreen.enabled = true;
-        LoadingScreenButton.SetActive(true);
-        LoadingScreenButton.GetComponent<Button>().onClick.AddListener(QuitApplication);
-        LoadingScreenResult.text = "Неизвестный пакет данных!";
+        LoadingScreenResult.text = _message;
         graphicCanvasEnabledLogin.enabled = false;
     }
 

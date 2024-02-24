@@ -10,6 +10,7 @@ public class DecodingDataFromServer : MonoBehaviour
 {
 
     private readonly Dictionary<string, Action<object>> handlers = new();
+    private readonly Queue<Action> mainThreadQueue = new Queue<Action>();
 
     public DecodingDataFromServer()
     {
@@ -19,8 +20,11 @@ public class DecodingDataFromServer : MonoBehaviour
     private void PacketHandlers()
     {
         RegisterResponse(CommandKeys.SuccessfulLogin, ResponseProcessing);
-        RegisterResponse(CommandKeys.FailedRegistration, ResponseProcessing);
         RegisterResponse(CommandKeys.FailedLogin, ResponseProcessing);
+
+        RegisterResponse(CommandKeys.SuccessfulRegistration, ResponseProcessing);
+        RegisterResponse(CommandKeys.FailedRegistration, ResponseProcessing);
+
     }
 
     private void RegisterResponse(string keyType, Action<object> handler)
@@ -36,6 +40,31 @@ public class DecodingDataFromServer : MonoBehaviour
             string _message = responseData.Message;
 
             Debug.Log($"Получено: \nКлюч {_key}; \nСообщение: {_message}");
+
+            switch (_key)
+            {
+                case CommandKeys.SuccessfulLogin:
+                    mainThreadQueue.Enqueue(() => UIManager.instance.DisplayAnswer(2, _message));
+                    break;
+                case CommandKeys.FailedLogin:
+                    mainThreadQueue.Enqueue(() => UIManager.instance.DisplayAnswer(0, _message));
+                    break;
+
+                case CommandKeys.SuccessfulRegistration:
+                    mainThreadQueue.Enqueue(() => UIManager.instance.DisplayAnswer(2, _message));
+                    break;
+                case CommandKeys.FailedRegistration:
+                    mainThreadQueue.Enqueue(() => UIManager.instance.DisplayAnswer(0, _message));
+                    break;
+            }
+        }
+    }
+
+    private void Update()
+    {
+        while (mainThreadQueue.Count > 0)
+        {
+            mainThreadQueue.Dequeue().Invoke();
         }
     }
 
