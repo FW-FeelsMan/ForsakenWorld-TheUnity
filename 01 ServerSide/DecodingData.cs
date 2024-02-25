@@ -13,6 +13,11 @@ public class DecodingData : MonoBehaviour
     private readonly DataHandler dataHandler = new();
     private readonly int clientSocketNum;
     public int currentActiveSocketNum;
+    public event Action<int> ClientDisconnected;
+    private void OnClientDisconnected(int socketNum)
+    {
+        ClientDisconnected?.Invoke(socketNum);
+    }
 
     public DecodingData(Socket clientSocket)
     {
@@ -144,27 +149,18 @@ public class DecodingData : MonoBehaviour
 
     public async Task ProcessPacketAsync(byte[] packet)
     {
-        try
+        await Task.Run(() =>
         {
-            using MemoryStream memoryStream = new MemoryStream(packet);
+            using MemoryStream memoryStream = new(packet);
             var formatter = new BinaryFormatter();
+
             string keyType = (string)formatter.Deserialize(memoryStream);
 
             if (handlers.TryGetValue(keyType, out var handler))
             {
                 object dataObject = formatter.Deserialize(memoryStream);
-
-                // Вместо Task.Run используем асинхронный вызов внутри главного потока Unity
-                await Task.Yield(); // Освобождаем поток на одну итерацию цикла обновления
-
                 handler(dataObject);
             }
-        }
-        catch (Exception ex)
-        {
-            Debug.Log($"Ошибка обработки пакета: {ex.Message}");
-        }
+        });
     }
-
-
 }
