@@ -71,6 +71,17 @@ public class SocketClient : Singleton<SocketClient>
             }
 
             _networkStream.Write(data, 0, data.Length);
+
+            await Task.Delay(GlobalSettings.ServerResponseTimeout); 
+
+            if (_networkStream.DataAvailable)
+            {
+                return;
+            }
+            else
+            {
+                uiManager.DisplayAnswer(0, GlobalStrings.ErrorWaitingForResponse);
+            }
         }
         catch (SocketException ex)
         {

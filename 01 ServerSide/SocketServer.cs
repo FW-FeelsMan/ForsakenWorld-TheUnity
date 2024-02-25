@@ -146,16 +146,6 @@ public class SocketServer : Singleton<SocketServer>
         connectedClients.Remove(client);
         client.Close();
     }
-    /*public void ForceRemoveClient(int socketNum)
-    {
-        Socket clientToRemove = connectedClients.Find(client => ((int)client.Handle.ToInt64()) == socketNum);
-        if (clientToRemove != null)
-        {
-            connectedClients.Remove(clientToRemove);
-            clientToRemove.Close();
-        }
-    }*/
-
 
     private void OnDestroy()
     {
