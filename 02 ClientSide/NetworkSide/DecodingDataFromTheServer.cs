@@ -44,7 +44,8 @@ public class DecodingDataFromServer : MonoBehaviour
             switch (_key)
             {
                 case CommandKeys.SuccessfulLogin:
-                    mainThreadQueue.Enqueue(() => UIManager.instance.DisplayAnswer(2, _message));
+                    mainThreadQueue.Enqueue(() => UIManager.instance.ShowMenu());
+                    mainThreadQueue.Enqueue(() => PingManager.instance.StartSendingPings());
                     break;
                 case CommandKeys.FailedLogin:
                     mainThreadQueue.Enqueue(() => UIManager.instance.DisplayAnswer(0, _message));
@@ -70,39 +71,18 @@ public class DecodingDataFromServer : MonoBehaviour
 
     public async Task ProcessPacketAsync(byte[] packet)
     {
-        try
+        await Task.Run(() =>
         {
-            await Task.Run(() =>
+            using MemoryStream memoryStream = new(packet);
+            var formatter = new BinaryFormatter();
+
+            string keyType = (string)formatter.Deserialize(memoryStream);
+
+            if (handlers.TryGetValue(keyType, out var handler))
             {
-                using MemoryStream memoryStream = new(packet);
-                var formatter = new BinaryFormatter();
-
-                try
-                {
-                    string keyType = (string)formatter.Deserialize(memoryStream);
-
-                    if (handlers.TryGetValue(keyType, out var handler))
-                    {
-                        object dataObject = formatter.Deserialize(memoryStream);
-                        handler(dataObject);
-                    }
-                    else
-                    {
-                        LogProcessor.ProcessLog(FWL.GetClassName(), $"Не найден обработчик под полученный ключ: {keyType}");
-                        Debug.Log($"Не найден обработчик под полученный ключ: {keyType}");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    LogProcessor.ProcessLog(FWL.GetClassName(), $"Ошибка десериализации объекта: {ex.Message}");
-                    Debug.Log($"Ошибка десериализации объекта: {ex.Message}");
-                }
-            });
-        }
-        catch (Exception ex)
-        {
-            LogProcessor.ProcessLog(FWL.GetClassName(), $"Ошибка обработки полученного пакета: {ex.Message}");
-            Debug.Log($"Ошибка обработки полученного пакета: {ex.Message}");
-        }
+                object dataObject = formatter.Deserialize(memoryStream);
+                handler(dataObject);
+            }
+        });
     }
 }

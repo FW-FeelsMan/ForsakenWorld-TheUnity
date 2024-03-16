@@ -1,31 +1,31 @@
-using System.Collections;
-using System.Collections.Generic;
+using System;
+using System.Threading.Tasks;
 using UnityEngine;
 
-public class PingManager : MonoBehaviour
+public class PingManager : Singleton<PingManager>
 {
-    private string serverIpAddress;
-    private List<int> pingTimes = new();
-    
-    public void Initialize(string ipAddress)
+    //public static PingManager instance;
+
+    private void Awake()
     {
-        serverIpAddress = ipAddress;
-        StartCoroutine(PingUpdate());
+        instance = this;
     }
 
-    IEnumerator PingUpdate()
+    public async void StartSendingPings()
     {
         while (true)
         {
-            Ping ping = new(serverIpAddress);
-            yield return new WaitForSeconds(1f);
-
-            while (!ping.isDone)
-            {
-                yield return null;
-            }
-
-            pingTimes.Add(ping.time);
+            SendPing();
+            await Task.Delay(GlobalSettings.PingIntervalMilliseconds);
         }
+    }
+
+    private void SendPing()
+    {
+        _ = RequestToServer.RequestTypeAsync(CommandKeys.GetPing, GlobalStrings.GetPingMessage);
+
+        DateTime pingSentTime = DateTime.Now;
+        //Debug.Log(pingSentTime);
+        
     }
 }

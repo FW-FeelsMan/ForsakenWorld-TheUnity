@@ -2,7 +2,8 @@ using UnityEngine;
 
 public class GlobalSettings 
 {
-    public static int ServerResponseTimeout = 5;
+    public static int ServerResponseTimeout = 50;
+    public static int PingIntervalMilliseconds = 1000;
     public static void SetServerResponseTimeout(int value)
     {
         if (value >= 1 && value <= 5)

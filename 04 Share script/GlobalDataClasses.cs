@@ -10,11 +10,16 @@ public class GlobalDataClasses : MonoBehaviour
         public string Email { get; set; }
         public string HashedPassword { get; set; }
         public string HardwareID { get; set; }
-        public bool ForceLoginRequested {get; set;}
+        public bool ForceLoginRequested { get; set; }
+    }
+    [Serializable]
+    public struct RequestFromUser
+    {
+        public string getPing { get; set; }
     }
 
     [Serializable]
-    public struct ServerResponseMessage 
+    public struct ServerResponseMessage
     {
         public string KeyType { get; set; }
         public string Message { get; set; }

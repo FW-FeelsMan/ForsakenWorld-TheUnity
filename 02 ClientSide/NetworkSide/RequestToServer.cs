@@ -78,6 +78,7 @@ public class RequestToServer : MonoBehaviour
             var task = UserData(keyType, userInput.Email, userInput.Password, userInputManager.forceLoginRequested.isOn);
             yield return new WaitUntil(() => task.IsCompleted);
         }
+
     }
 
     public static async Task<byte[]> UserData(string _keyType, string _email, string _password, bool _forceLoginRequested)
@@ -117,6 +118,7 @@ public class RequestToServer : MonoBehaviour
             }
 
             SocketClient.Instance.SendData(requestData);
+            Debug.Log($"Отправлено: {keyType}");
 
             return requestData;
         }

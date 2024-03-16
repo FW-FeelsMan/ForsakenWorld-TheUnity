@@ -23,6 +23,11 @@ public class UIManager : MonoBehaviour
         instance = this;
     }
 
+    public void Initialization(){
+        CanvasLoadingScreen.enabled = false;
+        Menu_Environment.SetActive(false);
+    }
+    
     public void DisplayError(string errorMsg)
     {
         SetCurrentIndex(0);
@@ -85,6 +90,7 @@ public class UIManager : MonoBehaviour
 
     public void DisplayAnswer(int _index, string _message)
     {
+        LoadingScreenResult.text = "";
         SetCurrentIndex(_index);
         CanvasLoadingScreen.enabled = true;
         LoadingScreenButton.SetActive(true);

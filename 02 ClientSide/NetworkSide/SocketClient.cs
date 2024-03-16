@@ -11,7 +11,6 @@ public class SocketClient : Singleton<SocketClient>
     public Socket Client { get; private set; }
     private bool isConnected = false;
     private UIManager uiManager;
-    private PingManager pingManager;
     private ConnectionDataLoader connectionDataLoader;
     private DecodingDataFromServer decodingDataFromServer;
 
@@ -23,10 +22,7 @@ public class SocketClient : Singleton<SocketClient>
 
         decodingDataFromServer = gameObject.AddComponent<DecodingDataFromServer>();
 
-        uiManager.CanvasLoadingScreen.enabled = false;
-        uiManager.Menu_Environment.SetActive(false);
-        pingManager = gameObject.AddComponent<PingManager>();
-        pingManager.Initialize(connectionDataLoader.serverIpAddress);
+        uiManager.Initialization();
     }
 
     private void CloseConnection(Socket client)
@@ -54,7 +50,7 @@ public class SocketClient : Singleton<SocketClient>
         }
     }
 
-    public async void SendData(byte[] data)
+    public async Task SendData(byte[] data)
     {
         try
         {
@@ -70,15 +66,9 @@ public class SocketClient : Singleton<SocketClient>
                 isConnected = true;
             }
 
-            _networkStream.Write(data, 0, data.Length);
+            await _networkStream.WriteAsync(data, 0, data.Length);
 
-            await Task.Delay(GlobalSettings.ServerResponseTimeout); 
-
-            if (_networkStream.DataAvailable)
-            {
-                return;
-            }
-            else
+            if (!await IsPacketReceivedWithinTimeout())
             {
                 uiManager.DisplayAnswer(0, GlobalStrings.ErrorWaitingForResponse);
             }
@@ -90,6 +80,32 @@ public class SocketClient : Singleton<SocketClient>
         }
     }
 
+    private async Task<bool> IsPacketReceivedWithinTimeout()
+    {
+        int timeoutMilliseconds = 5000;
+        int checkInterval = 100; 
+        DateTime startTime = DateTime.Now;
+
+        while ((DateTime.Now - startTime).TotalMilliseconds < timeoutMilliseconds)
+        {
+            if (_networkStream.DataAvailable)
+            {
+                byte[] buffer = new byte[1024]; 
+                int bytesRead = await _networkStream.ReadAsync(buffer, 0, buffer.Length);
+                if (bytesRead > 0)
+                {
+                    Debug.Log($"Данные обнаружены: {bytesRead} байт");
+                    return true;
+                }
+            }
+            else
+            {
+                //Debug.Log($"Ожидание: {(DateTime.Now - startTime).TotalSeconds} секунд.");
+                await Task.Delay(checkInterval);
+            }
+        }
+        return false;
+    }
     private async Task ConnectToServerAsync()
     {
         var connectTask = Task.Factory.FromAsync(Client.BeginConnect, Client.EndConnect, connectionDataLoader.serverIpAddress, connectionDataLoader.serverPort, null);
@@ -127,7 +143,7 @@ public class SocketClient : Singleton<SocketClient>
                 var length = await _networkStream.ReadAsync(responseBuffer, 0, responseBuffer.Length);
 
                 if (length > 0)
-                {                    
+                {
                     await decodingDataFromServer.ProcessPacketAsync(responseBuffer);
                 }
                 else

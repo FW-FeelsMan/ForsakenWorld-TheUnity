@@ -82,8 +82,6 @@ public class SocketServer : Singleton<SocketServer>
 
     private async void HandleClient(Socket client, DecodingData decodingData)
     {
-        decodingData.ClientDisconnected += ForceRemoveClient;
-
         if (client != null && client.Connected)
         {
             using NetworkStream networkStream = new(client);
@@ -125,16 +123,6 @@ public class SocketServer : Singleton<SocketServer>
             LogProcessor.ProcessLog(FWL.GetClassName(), "Не удалось подключиться к клиенту");
         }
     }
-    private void ForceRemoveClient(int socketNum)
-    {
-        // Отключаем только сокет, связанный с указанным socketNum
-        Socket clientToRemove = connectedClients.Find(client => ((int)client.Handle.ToInt64()) == socketNum);
-        if (clientToRemove != null)
-        {
-            connectedClients.Remove(clientToRemove);
-            clientToRemove.Close();
-        }
-    }
 
     private void AddClient(Socket client)
     {
@@ -146,6 +134,16 @@ public class SocketServer : Singleton<SocketServer>
         connectedClients.Remove(client);
         client.Close();
     }
+    public void ForceRemoveClient(int socketNum)
+    {
+        Socket clientToRemove = connectedClients.Find(client => ((int)client.Handle.ToInt64()) == socketNum);
+        if (clientToRemove != null)
+        {
+            connectedClients.Remove(clientToRemove);
+            clientToRemove.Close();
+        }
+    }
+
 
     private void OnDestroy()
     {

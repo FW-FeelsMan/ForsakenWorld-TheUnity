@@ -31,6 +31,7 @@ public class DecodingData : MonoBehaviour
     {
         PacketHandler(CommandKeys.LoginRequest, HandleLoginRequest);
         PacketHandler(CommandKeys.RegistrationRequest, HandleRegistrationRequest);
+        PacketHandler(CommandKeys.GetPing, HandlePingRequest);
     }
 
     private void PacketHandler(string keyType, Action<object> handler)
@@ -51,7 +52,7 @@ public class DecodingData : MonoBehaviour
         string hardwareID = userData.HardwareID;
         bool forceLoginRequested = userData.ForceLoginRequested;
 
-        if (email == null || hashedPassword == null || hardwareID == null)
+        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(hashedPassword) || string.IsNullOrEmpty(hardwareID))
         {
             _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, GlobalStrings.IncorrectData);
             return;
@@ -146,6 +147,18 @@ public class DecodingData : MonoBehaviour
         int socketNum = dataHandler.GetClientSocketNum(email);
         currentActiveSocketNum = socketNum;
     }
+
+    private void HandlePingRequest(object dataObject)
+    {
+        if (dataObject is GlobalDataClasses.RequestFromUser userRequest)
+        {
+            string getPing = userRequest.getPing;
+
+            _ = answerToClient.ServerResponseWrapper(CommandKeys.GetPing, GlobalStrings.GetPongMessage);
+            Debug.Log("отправил понг");
+        }
+    }
+
 
     public async Task ProcessPacketAsync(byte[] packet)
     {
