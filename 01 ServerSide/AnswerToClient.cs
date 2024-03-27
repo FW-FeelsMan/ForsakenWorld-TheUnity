@@ -52,6 +52,7 @@ public class AnswerToClient : MonoBehaviour
             }
 
             await SendDataAsync(requestData);
+            Debug.Log($"Отправлен ответ на {keyType}");
         }
         catch (Exception)
         {

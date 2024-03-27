@@ -4,8 +4,6 @@ using UnityEngine;
 
 public class PingManager : Singleton<PingManager>
 {
-    //public static PingManager instance;
-
     private void Awake()
     {
         instance = this;
@@ -20,12 +18,14 @@ public class PingManager : Singleton<PingManager>
         }
     }
 
-    private void SendPing()
+    public async void SendPing()
     {
-        _ = RequestToServer.RequestTypeAsync(CommandKeys.GetPing, GlobalStrings.GetPingMessage);
+        GlobalDataClasses.RequestFromUser pingRequest = new GlobalDataClasses.RequestFromUser
+        {
+            getPing = GlobalStrings.GetPingMessage
+        };
 
-        DateTime pingSentTime = DateTime.Now;
-        //Debug.Log(pingSentTime);
-        
+        _ = RequestToServer.RequestTypeAsync(CommandKeys.GetPing, pingRequest);
     }
+
 }

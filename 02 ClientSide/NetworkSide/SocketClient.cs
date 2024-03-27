@@ -11,14 +11,12 @@ public class SocketClient : Singleton<SocketClient>
     public Socket Client { get; private set; }
     private bool isConnected = false;
     private UIManager uiManager;
-    private ConnectionDataLoader connectionDataLoader;
     private DecodingDataFromServer decodingDataFromServer;
 
     private void Start()
     {
         uiManager = GetComponent<UIManager>();
-        connectionDataLoader = gameObject.AddComponent<ConnectionDataLoader>();
-        connectionDataLoader.LoadConnectionData();
+        ConnectionDataLoader.LoadConnectionData();
 
         decodingDataFromServer = gameObject.AddComponent<DecodingDataFromServer>();
 
@@ -53,25 +51,26 @@ public class SocketClient : Singleton<SocketClient>
     public async Task SendData(byte[] data)
     {
         try
-        {
-            uiManager.DisplayConnecting();
+        {            
 
             if (!isConnected)
             {
                 Client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                uiManager.DisplayConnecting();
                 await ConnectToServerAsync();
                 _networkStream = new NetworkStream(Client);
                 StartCoroutine(CheckConnection(Client));
                 StartListeningForResponses();
                 isConnected = true;
+                uiManager.HideConnecting();
             }
 
             await _networkStream.WriteAsync(data, 0, data.Length);
 
-            if (!await IsPacketReceivedWithinTimeout())
+            /*if (!await IsPacketReceivedWithinTimeout())
             {
                 uiManager.DisplayAnswer(0, GlobalStrings.ErrorWaitingForResponse);
-            }
+            }*/
         }
         catch (SocketException ex)
         {
@@ -100,7 +99,6 @@ public class SocketClient : Singleton<SocketClient>
             }
             else
             {
-                //Debug.Log($"ќжидание: {(DateTime.Now - startTime).TotalSeconds} секунд.");
                 await Task.Delay(checkInterval);
             }
         }
@@ -108,7 +106,7 @@ public class SocketClient : Singleton<SocketClient>
     }
     private async Task ConnectToServerAsync()
     {
-        var connectTask = Task.Factory.FromAsync(Client.BeginConnect, Client.EndConnect, connectionDataLoader.serverIpAddress, connectionDataLoader.serverPort, null);
+        var connectTask = Task.Factory.FromAsync(Client.BeginConnect, Client.EndConnect, ConnectionDataLoader.serverIpAddress, ConnectionDataLoader.serverPort, null);
         await connectTask.ConfigureAwait(false);
 
         if (!Client.Connected)
@@ -155,7 +153,7 @@ public class SocketClient : Singleton<SocketClient>
             }
             catch (Exception ex)
             {
-                uiManager.DisplayError(GlobalStrings.ErrorMessageFailedReadData);
+                uiManager.DisplayError(GlobalStrings.ErrorMessageConnectionLost);
                 Debug.Log($"{ex.Message}");
                 ServerDisconnected?.Invoke();
                 break;

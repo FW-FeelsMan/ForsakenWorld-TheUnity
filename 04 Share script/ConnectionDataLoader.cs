@@ -4,11 +4,11 @@ using ForsakenWorld;
 
 public class ConnectionDataLoader: MonoBehaviour
 {
-    public string serverIpAddress;
-    public int serverPort;
+    public static  string serverIpAddress;
+    public static  int serverPort;
     private const string ConfigFilePath = "config.ini";
     private const string ErrorMessageFileNotFound = "Файл config.ini не найден";
-    public void LoadConnectionData()
+    public static void LoadConnectionData()
     {
         string filePath = Path.Combine(Application.streamingAssetsPath, ConfigFilePath);
         if (File.Exists(filePath))
