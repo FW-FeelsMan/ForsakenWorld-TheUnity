@@ -5,23 +5,14 @@ using System.Threading.Tasks;
 using UnityEngine;
 using System.IO;
 using System.Collections.Generic;
-using ForsakenWorld;
 
 public class SocketServer : Singleton<SocketServer>
 {
     public bool isOn;
-    private Socket _listener;
     private bool _isListening;
+    private Socket _listener;
+    private readonly int _port = 26950;
     public static List<Socket> connectedClients = new();
-
-    private void Start()
-    {
-        if (isOn)
-        {
-            StartServer();
-        }
-    }
-
     private void Update()
     {
         if (isOn && !_isListening)
@@ -33,17 +24,14 @@ public class SocketServer : Singleton<SocketServer>
             StopServer();
         }
     }
-
     private void StartServer()
     {
         _listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        _listener.Bind(new IPEndPoint(IPAddress.Any, 26950));
+        _listener.Bind(new IPEndPoint(IPAddress.Any, _port));
         _listener.Listen(100);
         _isListening = true;
 
         ListenForClients();
-
-        LogProcessor.ProcessLog(FWL.GetClassName(), GlobalStrings.ServerStarted);
     }
 
     private void StopServer()
@@ -74,7 +62,6 @@ public class SocketServer : Singleton<SocketServer>
             }
             catch (ObjectDisposedException ex)
             {
-                LogProcessor.ProcessLog(FWL.GetClassName(), ex);
                 Debug.Log(ex);
             }
         }
@@ -110,7 +97,6 @@ public class SocketServer : Singleton<SocketServer>
                 }
                 catch (Exception ex)
                 {
-                    LogProcessor.ProcessLog(FWL.GetClassName(), "Ошибка при обработке клиента: " + ex.Message);
                     Debug.LogError(ex);
                     break;
                 }
@@ -120,7 +106,7 @@ public class SocketServer : Singleton<SocketServer>
         }
         else
         {
-            LogProcessor.ProcessLog(FWL.GetClassName(), "Не удалось подключиться к клиенту");
+           Debug.Log("Не удалось подключиться к клиенту");
         }
     }
 

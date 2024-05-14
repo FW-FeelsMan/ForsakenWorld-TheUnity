@@ -1,6 +1,4 @@
-using System;
 using System.Threading.Tasks;
-using UnityEngine;
 
 public class PingManager : Singleton<PingManager>
 {
@@ -22,7 +20,7 @@ public class PingManager : Singleton<PingManager>
     {
         GlobalDataClasses.RequestFromUser pingRequest = new GlobalDataClasses.RequestFromUser
         {
-            getPing = GlobalStrings.GetPingMessage
+            GetPing = GlobalStrings.GetPingMessage
         };
 
         _ = RequestToServer.RequestTypeAsync(CommandKeys.GetPing, pingRequest);

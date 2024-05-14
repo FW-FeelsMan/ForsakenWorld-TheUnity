@@ -15,7 +15,7 @@ public class GlobalDataClasses : MonoBehaviour
     [Serializable]
     public struct RequestFromUser
     {
-        public string getPing { get; set; }
+        public string GetPing { get; set; }
     }
 
     [Serializable]

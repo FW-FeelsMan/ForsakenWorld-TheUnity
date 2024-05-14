@@ -152,7 +152,7 @@ public class DecodingData : MonoBehaviour
     {
         if (dataObject is GlobalDataClasses.RequestFromUser userRequest)
         {
-            string pingValue = userRequest.getPing; 
+            string pingValue = userRequest.GetPing; 
             Debug.Log($"Received ping request with value: {pingValue}");
 
             _ = answerToClient.ServerResponseWrapper(CommandKeys.GetPing, GlobalStrings.GetPongMessage);

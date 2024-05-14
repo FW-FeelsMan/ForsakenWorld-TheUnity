@@ -46,6 +46,7 @@ public class DecodingDataFromServer : MonoBehaviour
                 case CommandKeys.SuccessfulLogin:
                     mainThreadQueue.Enqueue(() => UIManager.instance.ShowMenu());
                     mainThreadQueue.Enqueue(() => PingManager.instance.StartSendingPings());
+                    mainThreadQueue.Enqueue(() => PullClientData.instance.RequestClientData());
                     break;
                 case CommandKeys.FailedLogin:
                     mainThreadQueue.Enqueue(() => UIManager.instance.DisplayAnswer(0, _message));
