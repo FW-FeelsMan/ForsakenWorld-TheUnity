@@ -1,7 +1,9 @@
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using MySql.Data.MySqlClient;
 using ForsakenWorld;
+using System.Collections.Generic;
 
 public class DataHandler
 {
@@ -9,194 +11,291 @@ public class DataHandler
     private string loggedInUserEmail;
     public bool _isUserActive;
 
-    public bool HandleLoginData(string email, string hashedPassword, string hardwareID)
+    public async Task<bool> HandleLoginDataAsync(string email, string hashedPassword, string hardwareID, bool forceLoginRequested = false)
     {
-        using MySqlConnection connection = CreateConnection();
-
-        string getUserQuery = "SELECT password FROM user_data WHERE email = @email";
-        MySqlCommand getUserCommand = new(getUserQuery, connection);
-        getUserCommand.Parameters.AddWithValue("@email", email);
-        object result = getUserCommand.ExecuteScalar();
-
-        if (result == null || (string)result != hashedPassword)
+        try
         {
-            return false;
-        }
+            using MySqlConnection connection = await CreateConnectionAsync();
+            string getUserQuery = "SELECT password FROM user_data WHERE email = @Email";
+            MySqlCommand getUserCommand = new(getUserQuery, connection);
+            getUserCommand.Parameters.AddWithValue("@Email", email);
+            object result = await getUserCommand.ExecuteScalarAsync();
 
-        UpdateDeviceId(email, hardwareID);
+            if (result == null || (string)result != hashedPassword)
+            {
+                return false;
+            }
 
-        WriteIDFile(email, hardwareID, DateTime.Now);
-        loggedInUserEmail = email;
+            // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
+            if (forceLoginRequested)
+            {
+                await SetClientStatusAsync(email, 0); // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (0)
+            }
 
-        return true;
-    }
-
-    public bool HandleRegistrationData(string email, string hashedPassword, string hardwareID)
-    {
-        using MySqlConnection connection = CreateConnection();
-
-        string checkEmailQuery = "SELECT COUNT(*) FROM user_data WHERE email = @Email";
-        MySqlCommand checkEmailCommand = new(checkEmailQuery, connection);
-        checkEmailCommand.Parameters.AddWithValue("@Email", email);
-        int count = Convert.ToInt32(checkEmailCommand.ExecuteScalar());
-
-        if (count > 0)
-        {
-            return false;
-        }
-
-        string insertQuery = "INSERT INTO user_data (email, password, id_device, last_login_date) VALUES (@Email, @Password, @DeviceId, @LastLoginDate)";
-        MySqlCommand insertCommand = new(insertQuery, connection);
-        insertCommand.Parameters.AddWithValue("@Email", email);
-        insertCommand.Parameters.AddWithValue("@Password", hashedPassword);
-        insertCommand.Parameters.AddWithValue("@DeviceId", hardwareID);
-        insertCommand.Parameters.AddWithValue("@LastLoginDate", DateTime.Now);
-
-        int affectedRowsCount = insertCommand.ExecuteNonQuery();
-
-        if (affectedRowsCount > 0)
-        {
-
-            string getIdQuery = "SELECT id FROM user_data WHERE email = @Email";
-            MySqlCommand getIdCommand = new(getIdQuery, connection);
-            getIdCommand.Parameters.AddWithValue("@Email", email);
-            string userId = getIdCommand.ExecuteScalar().ToString();
-
-            CreateIDFile(userId, hardwareID, DateTime.Now);
-            SetClientStatus(email, 0);
+            await UpdateDeviceIdAsync(email, hardwareID);
+            await WriteIDFileAsync(email, hardwareID, DateTime.Now);
+            loggedInUserEmail = email;
 
             return true;
         }
-        return false;
-    }
-
-    public void SetClientStatus(string email, int status)
-    {
-        using MySqlConnection connection = CreateConnection();
-        string query = "UPDATE user_data SET status = @Status WHERE email = @Email";
-        MySqlCommand command = new(query, connection);
-        command.Parameters.AddWithValue("@Status", status);
-        command.Parameters.AddWithValue("@Email", email);
-        command.ExecuteNonQuery();
-    }
-    public void SetSocketClient(string email, int socketClient)
-    {
-        using MySqlConnection connection = CreateConnection();
-        string query = "UPDATE user_data SET socketClient = @socketClient WHERE email = @Email";
-        MySqlCommand command = new(query, connection);
-        command.Parameters.AddWithValue("@socketClient", socketClient);
-        command.Parameters.AddWithValue("@Email", email);
-        command.ExecuteNonQuery();
-    }
-    private void UpdateDeviceId(string email, string hardwareID)
-    {
-        using MySqlConnection connection = CreateConnection();
-        string query = "UPDATE user_data SET id_device = @id_device WHERE email = @Email";
-        MySqlCommand command = new(query, connection);
-        command.Parameters.AddWithValue("@id_device", hardwareID);
-        command.Parameters.AddWithValue("@Email", email);
-        command.ExecuteNonQuery();
-    }
-    public string IsUserActive(string email)
-    {
-        string status = "-1"; // По умолчанию устанавливаем неопределенный статус
-
-        using (MySqlConnection connection = CreateConnection())
+        catch (Exception ex)
         {
-            string getStatusQuery = "SELECT status FROM user_data WHERE email = @Email";
-            MySqlCommand getStatusCommand = new MySqlCommand(getStatusQuery, connection);
-            getStatusCommand.Parameters.AddWithValue("@Email", email);
-
-            object result = getStatusCommand.ExecuteScalar();
-
-            if (result != null)
-            {
-                // Преобразуем значение статуса в строку "1" или "0" и возвращаем
-                status = (Convert.ToInt32(result) == 1) ? "1" : "0";
-            }
-
-            return status;
+            LogProcessor.ProcessLog(FWL.GetClassName(), $"пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ: {ex.Message}");
+            return false;
         }
     }
 
+    public async Task<bool> HandleRegistrationDataAsync(string email, string hashedPassword, string hardwareID)
+    {
+        try
+        {
+            using MySqlConnection connection = await CreateConnectionAsync();
+            string checkEmailQuery = "SELECT COUNT(*) FROM user_data WHERE email = @Email";
+            MySqlCommand checkEmailCommand = new(checkEmailQuery, connection);
+            checkEmailCommand.Parameters.AddWithValue("@Email", email);
+            int count = Convert.ToInt32(await checkEmailCommand.ExecuteScalarAsync());
 
-    private MySqlConnection CreateConnection()
+            if (count > 0)
+            {
+                return false;
+            }
+
+            string insertQuery = "INSERT INTO user_data (email, password, id_device, last_login_date) VALUES (@Email, @Password, @DeviceId, @LastLoginDate)";
+            MySqlCommand insertCommand = new(insertQuery, connection);
+            insertCommand.Parameters.AddWithValue("@Email", email);
+            insertCommand.Parameters.AddWithValue("@Password", hashedPassword);
+            insertCommand.Parameters.AddWithValue("@DeviceId", hardwareID);
+            insertCommand.Parameters.AddWithValue("@LastLoginDate", DateTime.Now);
+
+            int affectedRowsCount = await insertCommand.ExecuteNonQueryAsync();
+
+            if (affectedRowsCount > 0)
+            {
+                string getIdQuery = "SELECT id FROM user_data WHERE email = @Email";
+                MySqlCommand getIdCommand = new(getIdQuery, connection);
+                getIdCommand.Parameters.AddWithValue("@Email", email);
+                string userId = (await getIdCommand.ExecuteScalarAsync()).ToString();
+
+                await CreateIDFileAsync(userId, hardwareID, DateTime.Now);
+                await SetClientStatusAsync(email, 0);
+
+                return true;
+            }
+            return false;
+        }
+        catch (Exception ex)
+        {
+            LogProcessor.ProcessLog(FWL.GetClassName(), $"пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ: {ex.Message}");
+            return false;
+        }
+    }
+
+    public async Task SetClientStatusAsync(string email, int status)
+    {
+        try
+        {
+            using MySqlConnection connection = await CreateConnectionAsync();
+            string query = "UPDATE user_data SET status = @Status WHERE email = @Email";
+            MySqlCommand command = new(query, connection);
+            command.Parameters.AddWithValue("@Status", status);
+            command.Parameters.AddWithValue("@Email", email);
+            await command.ExecuteNonQueryAsync();
+        }
+        catch (Exception ex)
+        {
+            LogProcessor.ProcessLog(FWL.GetClassName(), $"пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ: {ex.Message}");
+        }
+    }
+
+    public async Task SetSocketClientAsync(string email, int socketClient)
+    {
+        try
+        {
+            using MySqlConnection connection = await CreateConnectionAsync();
+            string query = "UPDATE user_data SET socketClient = @socketClient WHERE email = @Email";
+            MySqlCommand command = new(query, connection);
+            command.Parameters.AddWithValue("@socketClient", socketClient);
+            command.Parameters.AddWithValue("@Email", email);
+            await command.ExecuteNonQueryAsync();
+        }
+        catch (Exception ex)
+        {
+            LogProcessor.ProcessLog(FWL.GetClassName(), $"пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ: {ex.Message}");
+        }
+    }
+
+    private async Task UpdateDeviceIdAsync(string email, string hardwareID)
+    {
+        try
+        {
+            using MySqlConnection connection = await CreateConnectionAsync();
+            string query = "UPDATE user_data SET id_device = @id_device WHERE email = @Email";
+            MySqlCommand command = new(query, connection);
+            command.Parameters.AddWithValue("@id_device", hardwareID);
+            command.Parameters.AddWithValue("@Email", email);
+            await command.ExecuteNonQueryAsync();
+        }
+        catch (Exception ex)
+        {
+            LogProcessor.ProcessLog(FWL.GetClassName(), $"пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ ID пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ: {ex.Message}");
+        }
+    }
+
+    public async Task<string> IsUserActiveAsync(string email)
+    {
+        try
+        {
+            using MySqlConnection connection = await CreateConnectionAsync();
+            string getStatusQuery = "SELECT status FROM user_data WHERE email = @Email";
+            MySqlCommand getStatusCommand = new(getStatusQuery, connection);
+            getStatusCommand.Parameters.AddWithValue("@Email", email);
+
+            object result = await getStatusCommand.ExecuteScalarAsync();
+            return result != null ? (Convert.ToInt32(result) == 1 ? "1" : "0") : "-1";
+        }
+        catch (Exception ex)
+        {
+            LogProcessor.ProcessLog(FWL.GetClassName(), $"пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ: {ex.Message}");
+            return "-1";
+        }
+    }
+
+    private async Task<MySqlConnection> CreateConnectionAsync()
     {
         MySqlConnection connection = new(connectionString);
-        connection.Open();
+        await connection.OpenAsync();
         return connection;
     }
 
-    private void WriteIDFile(string email, string deviceId, DateTime lastLoginDate)
+    private async Task WriteIDFileAsync(string email, string deviceId, DateTime lastLoginDate)
     {
-        using MySqlConnection connection = CreateConnection();
-        string getIdQuery = "SELECT id FROM user_data WHERE email = @Email";
-        MySqlCommand getIdCommand = new(getIdQuery, connection);
-        getIdCommand.Parameters.AddWithValue("@Email", email);
-        string userId = getIdCommand.ExecuteScalar().ToString();
-
-        string path = @"C:\xampp\htdocs\UnityBackendLog\PersistentDataPath";
-        string fileName = "id_" + userId + ".txt";
-        string fullPath = Path.Combine(path, fileName);
-
         try
         {
+            using MySqlConnection connection = await CreateConnectionAsync();
+            string getIdQuery = "SELECT id FROM user_data WHERE email = @Email";
+            MySqlCommand getIdCommand = new(getIdQuery, connection);
+            getIdCommand.Parameters.AddWithValue("@Email", email);
+            string userId = (await getIdCommand.ExecuteScalarAsync()).ToString();
+
+            string path = @"C:\xampp\htdocs\UnityBackendLog\PersistentDataPath";
+            string fileName = "id_" + userId + ".txt";
+            string fullPath = Path.Combine(path, fileName);
+
             using StreamWriter writer = new(fullPath, true);
-            writer.WriteLine($"Device ID: {deviceId}, Last Login Date: {lastLoginDate}");
+            await writer.WriteLineAsync($"Device ID: {deviceId}, Last Login Date: {lastLoginDate}");
         }
         catch (Exception ex)
         {
-            LogProcessor.ProcessLog(FWL.GetClassName(), $"Ошибка при обновлении файла: {ex.Message}");
+            LogProcessor.ProcessLog(FWL.GetClassName(), $"пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ: {ex.Message}");
         }
     }
 
-    private void CreateIDFile(string userId, string deviceId, DateTime lastLoginDate)
+    private async Task CreateIDFileAsync(string userId, string deviceId, DateTime lastLoginDate)
     {
-        string path = @"C:\xampp\htdocs\UnityBackendLog\PersistentDataPath";
-        string fileName = "id_" + userId + ".txt";
-        string fullPath = Path.Combine(path, fileName);
-
         try
         {
+            string path = @"C:\xampp\htdocs\UnityBackendLog\PersistentDataPath";
+            string fileName = "id_" + userId + ".txt";
+            string fullPath = Path.Combine(path, fileName);
+
             using StreamWriter writer = new(fullPath, true);
-            writer.WriteLine($"Device ID: {deviceId}, Last Login Date: {lastLoginDate}");
+            await writer.WriteLineAsync($"Device ID: {deviceId}, Last Login Date: {lastLoginDate}");
         }
         catch (Exception ex)
         {
-            LogProcessor.ProcessLog(FWL.GetClassName(), $"Ошибка при создании файла: {ex.Message}");
+            LogProcessor.ProcessLog(FWL.GetClassName(), $"пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ: {ex.Message}");
         }
     }
+
     public string GetLoggedInUserEmail()
     {
         return loggedInUserEmail;
     }
-    public int GetClientSocketNum(string email)
-    {
-        int socketClient = -1; // вернуть -1 если сокета нет
 
-        using (MySqlConnection connection = CreateConnection())
+    public async Task<int> GetClientSocketNumAsync(string email)
+    {
+        try
         {
+            using MySqlConnection connection = await CreateConnectionAsync();
             string query = "SELECT socketClient FROM user_data WHERE email = @Email";
-            MySqlCommand command = new MySqlCommand(query, connection);
+            MySqlCommand command = new(query, connection);
             command.Parameters.AddWithValue("@Email", email);
 
-            // Попытка выполнения запроса и чтения значения сокета из базы данных
-            try
+            object result = await command.ExecuteScalarAsync();
+            return result != null && result != DBNull.Value ? Convert.ToInt32(result) : -1;
+        }
+        catch (Exception ex)
+        {
+            LogProcessor.ProcessLog(FWL.GetClassName(), $"пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ: {ex.Message}");
+            return -1;
+        }
+    }
+    public async Task<List<Character>> GetUserCharactersAsync(int userId)
+    {
+        List<Character> characters = new();
+
+        try
+        {
+            using MySqlConnection connection = await CreateConnectionAsync();
+            string query = "SELECT character_id, class_id, gender_id, race_id, level, appearance, currency FROM characters WHERE user_id = @UserId";
+            MySqlCommand command = new(query, connection);
+            command.Parameters.AddWithValue("@UserId", userId);
+
+            using MySqlDataReader reader = (MySqlDataReader)await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
             {
-                object result = command.ExecuteScalar();
-                if (result != null && result != DBNull.Value)
+                characters.Add(new Character
                 {
-                    socketClient = Convert.ToInt32(result);
-                }
-            }
-            catch (Exception ex)
-            {
-                // Обработка ошибки, если запрос не удался
-                LogProcessor.ProcessLog(FWL.GetClassName(), $"Ошибка при получении сокета: {ex.Message}");
+                    CharacterId = reader.GetInt32("character_id"),
+                    ClassId = reader.GetInt32("class_id"),
+                    GenderId = reader.GetInt32("gender_id"),
+                    RaceId = reader.GetInt32("race_id"),
+                    Level = reader.GetInt32("level"),
+                    Appearance = reader.GetString("appearance"),
+                    Currency = reader.GetInt32("currency")
+                });
             }
         }
+        catch (Exception ex)
+        {
+            LogProcessor.ProcessLog(FWL.GetClassName(), $"РћС€РёР±РєР° РїСЂРё Р·Р°РіСЂСѓР·РєРµ РїРµСЂСЃРѕРЅР°Р¶РµР№: {ex.Message}");
+        }
 
-        return socketClient;
+        return characters;
+    }
+    public async Task<int> GetUserIdByEmailAsync(string email)
+    {
+        int userId = -1;
+
+        try
+        {
+            using MySqlConnection connection = await CreateConnectionAsync();
+            string query = "SELECT id FROM user_data WHERE email = @Email";
+            MySqlCommand command = new(query, connection);
+            command.Parameters.AddWithValue("@Email", email);
+
+            object result = await command.ExecuteScalarAsync();
+            if (result != null && result != DBNull.Value)
+            {
+                userId = Convert.ToInt32(result);
+            }
+        }
+        catch (Exception ex)
+        {
+            LogProcessor.ProcessLog(FWL.GetClassName(), $"РћС€РёР±РєР° РїСЂРё РїРѕР»СѓС‡РµРЅРёРё ID РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ: {ex.Message}");
+        }
+
+        return userId;
     }
 
+}
+public class Character
+{
+    public int CharacterId { get; set; }
+    public int ClassId { get; set; }
+    public int GenderId { get; set; }
+    public int RaceId { get; set; }
+    public int Level { get; set; }
+    public string Appearance { get; set; }
+    public int Currency { get; set; }
 }

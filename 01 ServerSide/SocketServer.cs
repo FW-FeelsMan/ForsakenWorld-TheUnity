@@ -2,7 +2,6 @@ using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
-using UnityEngine;
 using System.IO;
 using System.Collections.Generic;
 
@@ -13,6 +12,7 @@ public class SocketServer : Singleton<SocketServer>
     private Socket _listener;
     private readonly int _port = 26950;
     public static List<Socket> connectedClients = new();
+
     private void Update()
     {
         if (isOn && !_isListening)
@@ -24,14 +24,22 @@ public class SocketServer : Singleton<SocketServer>
             StopServer();
         }
     }
+
     private void StartServer()
     {
-        _listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        _listener.Bind(new IPEndPoint(IPAddress.Any, _port));
-        _listener.Listen(100);
-        _isListening = true;
-
-        ListenForClients();
+        try
+        {
+            _listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            _listener.Bind(new IPEndPoint(IPAddress.Any, _port));
+            _listener.Listen(100);
+            _isListening = true;
+            Logger.Log("Server started and listening on port " + _port, LogLevel.Info);
+            ListenForClients();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Error starting server: {ex.Message}", LogLevel.Error);
+        }
     }
 
     private void StopServer()
@@ -41,6 +49,7 @@ public class SocketServer : Singleton<SocketServer>
             _isListening = false;
             _listener.Close();
             _listener = null;
+            Logger.Log("Server stopped.", LogLevel.Info);
         }
     }
 
@@ -56,18 +65,22 @@ public class SocketServer : Singleton<SocketServer>
                     null
                 );
 
+                Logger.Log("Client connected: " + client.RemoteEndPoint, LogLevel.Info);
                 DecodingData decodingData = new(client);
-
-                HandleClient(client, decodingData);
+                await HandleClientAsync(client, decodingData);
             }
             catch (ObjectDisposedException ex)
             {
-                Debug.Log(ex);
+                Logger.Log($"Server stopped listening for clients: {ex.Message}", LogLevel.Warning);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Error accepting client: {ex.Message}", LogLevel.Error);
             }
         }
     }
 
-    private async void HandleClient(Socket client, DecodingData decodingData)
+    private async Task HandleClientAsync(Socket client, DecodingData decodingData)
     {
         if (client != null && client.Connected)
         {
@@ -81,6 +94,7 @@ public class SocketServer : Singleton<SocketServer>
                     bool isDisconnected = client.Poll(1000, SelectMode.SelectRead) && client.Available == 0;
                     if (isDisconnected)
                     {
+                        Logger.Log($"Client disconnected: {client.RemoteEndPoint}", LogLevel.Warning);
                         decodingData.ClientisDisconnected();
                         RemoveClient(client);
                         break;
@@ -92,12 +106,13 @@ public class SocketServer : Singleton<SocketServer>
                     AddClient(client);
                     if (bytesRead > 0)
                     {
+                        Logger.Log($"Received {bytesRead} bytes from {client.RemoteEndPoint}", LogLevel.Debug);
                         _ = Task.Run(() => decodingData.ProcessPacketAsync(buffer));
                     }
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogError(ex);
+                    Logger.Log($"Error handling client {client.RemoteEndPoint}: {ex.Message}", LogLevel.Error);
                     break;
                 }
 
@@ -106,20 +121,26 @@ public class SocketServer : Singleton<SocketServer>
         }
         else
         {
-           Debug.Log("Не удалось подключиться к клиенту");
+            Logger.Log("Failed to connect to client.", LogLevel.Warning);
         }
     }
 
     private void AddClient(Socket client)
     {
-        connectedClients.Add(client);
+        if (!connectedClients.Contains(client))
+        {
+            connectedClients.Add(client);
+            Logger.Log("Client added: " + client.RemoteEndPoint, LogLevel.Info);
+        }
     }
 
     public void RemoveClient(Socket client)
     {
         connectedClients.Remove(client);
         client.Close();
+        Logger.Log("Client removed: " + client.RemoteEndPoint, LogLevel.Info);
     }
+
     public void ForceRemoveClient(int socketNum)
     {
         Socket clientToRemove = connectedClients.Find(client => ((int)client.Handle.ToInt64()) == socketNum);
@@ -127,9 +148,9 @@ public class SocketServer : Singleton<SocketServer>
         {
             connectedClients.Remove(clientToRemove);
             clientToRemove.Close();
+            Logger.Log("Client force removed: " + clientToRemove.RemoteEndPoint, LogLevel.Info);
         }
     }
-
 
     private void OnDestroy()
     {

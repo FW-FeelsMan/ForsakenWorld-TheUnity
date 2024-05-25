@@ -14,9 +14,11 @@ public class DecodingData : MonoBehaviour
     private readonly int clientSocketNum;
     public int currentActiveSocketNum;
     public event Action<int> ClientDisconnected;
+
     private void OnClientDisconnected(int socketNum)
     {
         ClientDisconnected?.Invoke(socketNum);
+        Debug.Log($"Client disconnected event triggered for socket: {socketNum}");
     }
 
     public DecodingData(Socket clientSocket)
@@ -24,6 +26,7 @@ public class DecodingData : MonoBehaviour
         answerToClient = new AnswerToClient(clientSocket);
         IntPtr handle = clientSocket.Handle;
         clientSocketNum = handle.ToInt32();
+        Debug.Log($"DecodingData initialized for client socket: {clientSocket.RemoteEndPoint}");
         PacketHandlers();
     }
 
@@ -32,18 +35,21 @@ public class DecodingData : MonoBehaviour
         PacketHandler(CommandKeys.LoginRequest, HandleLoginRequest);
         PacketHandler(CommandKeys.RegistrationRequest, HandleRegistrationRequest);
         PacketHandler(CommandKeys.GetPing, HandlePingRequest);
+        Debug.Log("Packet handlers registered.");
     }
 
     private void PacketHandler(string keyType, Action<object> handler)
     {
         handlers[keyType] = handler;
+        Debug.Log($"Packet handler registered for key: {keyType}");
     }
 
-    private void HandleLoginRequest(object dataObject)
+    private async void HandleLoginRequest(object dataObject)
     {
         if (!(dataObject is GlobalDataClasses.UserDataObject userData))
         {
-            _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, GlobalStrings.UnknownPackage);
+            Debug.LogWarning("Invalid login request data.");
+            await answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, GlobalStrings.UnknownPackage);
             return;
         }
 
@@ -54,21 +60,24 @@ public class DecodingData : MonoBehaviour
 
         if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(hashedPassword) || string.IsNullOrEmpty(hardwareID))
         {
-            _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, GlobalStrings.IncorrectData);
+            Debug.LogWarning("Login request with missing data.");
+            await answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, GlobalStrings.IncorrectData);
             return;
         }
 
-        bool loginResult = dataHandler.HandleLoginData(email, hashedPassword, hardwareID);
+        bool loginResult = await dataHandler.HandleLoginDataAsync(email, hashedPassword, hardwareID, forceLoginRequested);
 
         if (!loginResult)
         {
-            _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, GlobalStrings.FailedLogin);
+            Debug.LogWarning($"Failed login attempt for email: {email}");
+            await answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, GlobalStrings.FailedLogin);
             return;
         }
 
-        if (!int.TryParse(dataHandler.IsUserActive(email), out int status))
+        int userId = await dataHandler.GetUserIdByEmailAsync(email);
+        if (!int.TryParse(await dataHandler.IsUserActiveAsync(email), out int status))
         {
-            Debug.Log($"{status} Не удалось преобразовать статус в целое число");
+            Debug.LogError($"Failed to convert user status to integer for email: {email}");
             return;
         }
 
@@ -84,32 +93,30 @@ public class DecodingData : MonoBehaviour
                     if (clientSocket != null)
                     {
                         SocketServer.Instance.RemoveClient(clientSocket);
-                        Debug.Log($"Произошел принудительный вход");
-                        _ = answerToClient.ServerResponseWrapper(CommandKeys.DisconnectKey, GlobalStrings.ForcedLogin);
-                        return;
+                        Debug.Log($"Forced login for email: {email}");
+                        await answerToClient.ServerResponseWrapper(CommandKeys.DisconnectKey, GlobalStrings.ForcedLogin);
                     }
                     else
                     {
-                        Debug.LogError($"Socket с номером {currentActiveSocketNum} не найден.");
+                        Debug.LogError($"Socket with number {currentActiveSocketNum} not found.");
                     }
                 }
             }
             else
             {
-                _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, GlobalStrings.UserIsAlreadyOnline);
+                Debug.LogWarning($"User already online: {email}");
+                await answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, GlobalStrings.UserIsAlreadyOnline);
                 return;
             }
         }
 
-        dataHandler.SetClientStatus(email, 1);
-        dataHandler.SetSocketClient(email, clientSocketNum);
-        _ = answerToClient.ServerResponseWrapper(CommandKeys.SuccessfulLogin, GlobalStrings.WelcomeMessage);
+        await dataHandler.SetClientStatusAsync(email, 1);
+        await dataHandler.SetSocketClientAsync(email, clientSocketNum);
+        await answerToClient.ServerResponseWrapper(CommandKeys.SuccessfulLogin, GlobalStrings.WelcomeMessage);
+        Debug.Log($"User logged in successfully: {email}");
     }
 
-
-
-
-    private void HandleRegistrationRequest(object dataObject)
+    private async void HandleRegistrationRequest(object dataObject)
     {
         if (dataObject is GlobalDataClasses.UserDataObject userData)
         {
@@ -117,48 +124,62 @@ public class DecodingData : MonoBehaviour
             string hashedPassword = userData.HashedPassword;
             string hardwareID = userData.HardwareID;
 
-            if (email == null || hashedPassword == null || hardwareID == null)
+            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(hashedPassword) || string.IsNullOrEmpty(hardwareID))
             {
-                _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedRegistration, GlobalStrings.IncorrectData);
+                Debug.LogWarning("Registration request with missing data.");
+                await answerToClient.ServerResponseWrapper(CommandKeys.FailedRegistration, GlobalStrings.IncorrectData);
             }
             else
             {
-                bool registerResult = dataHandler.HandleRegistrationData(email, hashedPassword, hardwareID);
+                bool registerResult = await dataHandler.HandleRegistrationDataAsync(email, hashedPassword, hardwareID);
 
                 if (registerResult)
                 {
-                    _ = answerToClient.ServerResponseWrapper(CommandKeys.SuccessfulRegistration, GlobalStrings.SuccessfulRegistration);
+                    await answerToClient.ServerResponseWrapper(CommandKeys.SuccessfulRegistration, GlobalStrings.SuccessfulRegistration);
+                    Debug.Log($"User registered successfully: {email}");
                 }
                 else
                 {
-                    _ = answerToClient.ServerResponseWrapper(CommandKeys.FailedRegistration, GlobalStrings.RegistrationErrorEmailExists);
+                    Debug.LogWarning($"Registration error - email exists: {email}");
+                    await answerToClient.ServerResponseWrapper(CommandKeys.FailedRegistration, GlobalStrings.RegistrationErrorEmailExists);
                 }
             }
         }
     }
 
-    public void ClientisDisconnected()
+    public async void ClientisDisconnected()
     {
-        var emailUserInLogged = dataHandler.GetLoggedInUserEmail();
-        dataHandler.SetClientStatus(emailUserInLogged, 0);
-    }
-    public void GetClientSocket(string email)
-    {
-        int socketNum = dataHandler.GetClientSocketNum(email);
-        currentActiveSocketNum = socketNum;
-    }
-
-    private void HandlePingRequest(object dataObject)
-    {
-        if (dataObject is GlobalDataClasses.RequestFromUser userRequest)
+        try
         {
-            string pingValue = userRequest.GetPing; 
-            Debug.Log($"Received ping request with value: {pingValue}");
-
-            _ = answerToClient.ServerResponseWrapper(CommandKeys.GetPing, GlobalStrings.GetPongMessage);
+            var emailUserInLogged = dataHandler.GetLoggedInUserEmail();
+            if (!string.IsNullOrEmpty(emailUserInLogged))
+            {
+                await dataHandler.SetClientStatusAsync(emailUserInLogged, 0);
+                Debug.Log($"Client status set to offline for email: {emailUserInLogged}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"Ошибка при отключении клиента: {ex.Message}");
         }
     }
 
+    public void GetClientSocket(string email)
+    {
+        currentActiveSocketNum = dataHandler.GetClientSocketNumAsync(email).Result;
+        Debug.Log($"Retrieved client socket number for email: {email} - {currentActiveSocketNum}");
+    }
+
+    private async void HandlePingRequest(object dataObject)
+    {
+        if (dataObject is GlobalDataClasses.RequestFromUser userRequest)
+        {
+            string pingValue = userRequest.GetPing;
+            Debug.Log($"Received ping request with value: {pingValue}");
+
+            await answerToClient.ServerResponseWrapper(CommandKeys.GetPing, GlobalStrings.GetPongMessage);
+        }
+    }
 
     public async Task ProcessPacketAsync(byte[] packet)
     {
@@ -172,7 +193,12 @@ public class DecodingData : MonoBehaviour
             if (handlers.TryGetValue(keyType, out var handler))
             {
                 object dataObject = formatter.Deserialize(memoryStream);
+                Debug.Log($"Processing packet with key: {keyType}");
                 handler(dataObject);
+            }
+            else
+            {
+                Debug.LogWarning($"No handler found for key: {keyType}");
             }
         });
     }

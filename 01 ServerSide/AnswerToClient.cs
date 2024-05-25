@@ -54,8 +54,9 @@ public class AnswerToClient : MonoBehaviour
             await SendDataAsync(requestData);
             Debug.Log($"Отправлен ответ на {keyType}");
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Debug.LogError($"Error in RequestTypeAsync: {ex.Message}");
             CloseClientSocket();
         }
     }
@@ -66,10 +67,11 @@ public class AnswerToClient : MonoBehaviour
         {
             using NetworkStream networkStream = new(clientSocket);
             await networkStream.WriteAsync(data, 0, data.Length);
-           
+            Debug.Log("Data sent to client.");
         }
-        catch (Exception)
-        {      
+        catch (Exception ex)
+        {
+            Debug.LogError($"Error sending data: {ex.Message}");
             CloseClientSocket();
         }
     }
@@ -80,11 +82,11 @@ public class AnswerToClient : MonoBehaviour
         {
             clientSocket.Shutdown(SocketShutdown.Both);
             clientSocket.Close();
+            Debug.Log("Client socket closed.");
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            
+            Debug.LogError($"Error closing socket: {ex.Message}");
         }
     }
-
 }
