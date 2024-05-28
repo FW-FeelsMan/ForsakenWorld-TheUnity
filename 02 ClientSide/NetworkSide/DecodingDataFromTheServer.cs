@@ -1,3 +1,4 @@
+// File: DecodingDataFromServer.cs
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,65 +9,83 @@ using UnityEngine;
 
 public class DecodingDataFromServer : MonoBehaviour
 {
-
     private readonly Dictionary<string, Action<object>> handlers = new();
-    private readonly Queue<Action> mainThreadQueue = new Queue<Action>();
+    private readonly Queue<Action> mainThreadQueue = new();
 
     public DecodingDataFromServer()
     {
         PacketHandlers();
+        Logger.CurrentLogLevel = LogLevel.Debug; // Set the desired log level here
     }
 
     private void PacketHandlers()
     {
         RegisterResponse(CommandKeys.SuccessfulLogin, ResponseProcessing);
         RegisterResponse(CommandKeys.FailedLogin, ResponseProcessing);
-
         RegisterResponse(CommandKeys.SuccessfulRegistration, ResponseProcessing);
         RegisterResponse(CommandKeys.FailedRegistration, ResponseProcessing);
 
+        Logger.Log("Packet handlers registered.", LogLevel.Debug);
     }
 
     private void RegisterResponse(string keyType, Action<object> handler)
     {
         handlers[keyType] = handler;
+        Logger.Log($"Response handler registered for key: {keyType}", LogLevel.Debug);
     }
 
     private void ResponseProcessing(object dataObject)
     {
         if (dataObject is GlobalDataClasses.ServerResponseMessage responseData)
         {
-            string _key = responseData.KeyType;
-            string _message = responseData.Message;
+            string key = responseData.KeyType;
+            string message = responseData.Message;
 
-            Debug.Log($"Получено: \nКлюч {_key}; \nСообщение: {_message}");
+            Logger.Log($"Received response: \nKey: {key}; \nMessage: {message}", LogLevel.Info);
 
-            switch (_key)
+            switch (key)
             {
                 case CommandKeys.SuccessfulLogin:
-                    mainThreadQueue.Enqueue(() => UIManager.instance.ShowMenu());
-                    mainThreadQueue.Enqueue(() => PingManager.instance.StartSendingPings());
-                    mainThreadQueue.Enqueue(() => PullClientData.instance.RequestClientData());
+                    EnqueueMainThreadAction(() => UIManager.instance.ShowMenu());
+                    EnqueueMainThreadAction(() => PingManager.instance.StartSendingPings());
+                    EnqueueMainThreadAction(() => PullClientData.instance.RequestClientData());
                     break;
                 case CommandKeys.FailedLogin:
-                    mainThreadQueue.Enqueue(() => UIManager.instance.DisplayAnswer(0, _message));
+                    EnqueueMainThreadAction(() => UIManager.instance.DisplayAnswer(0, message));
                     break;
-
                 case CommandKeys.SuccessfulRegistration:
-                    mainThreadQueue.Enqueue(() => UIManager.instance.DisplayAnswer(2, _message));
+                    EnqueueMainThreadAction(() => UIManager.instance.DisplayAnswer(2, message));
                     break;
                 case CommandKeys.FailedRegistration:
-                    mainThreadQueue.Enqueue(() => UIManager.instance.DisplayAnswer(0, _message));
+                    EnqueueMainThreadAction(() => UIManager.instance.DisplayAnswer(0, message));
+                    break;
+                default:
+                    Logger.Log($"Unhandled key: {key}", LogLevel.Warning);
                     break;
             }
+        }
+        else
+        {
+            Logger.Log("Invalid data object received.", LogLevel.Warning);
+        }
+    }
+
+    private void EnqueueMainThreadAction(Action action)
+    {
+        lock (mainThreadQueue)
+        {
+            mainThreadQueue.Enqueue(action);
         }
     }
 
     private void Update()
     {
-        while (mainThreadQueue.Count > 0)
+        lock (mainThreadQueue)
         {
-            mainThreadQueue.Dequeue().Invoke();
+            while (mainThreadQueue.Count > 0)
+            {
+                mainThreadQueue.Dequeue().Invoke();
+            }
         }
     }
 
@@ -74,15 +93,27 @@ public class DecodingDataFromServer : MonoBehaviour
     {
         await Task.Run(() =>
         {
-            using MemoryStream memoryStream = new(packet);
-            var formatter = new BinaryFormatter();
-
-            string keyType = (string)formatter.Deserialize(memoryStream);
-
-            if (handlers.TryGetValue(keyType, out var handler))
+            try
             {
-                object dataObject = formatter.Deserialize(memoryStream);
-                handler(dataObject);
+                using MemoryStream memoryStream = new(packet);
+                var formatter = new BinaryFormatter();
+
+                string keyType = (string)formatter.Deserialize(memoryStream);
+
+                if (handlers.TryGetValue(keyType, out var handler))
+                {
+                    object dataObject = formatter.Deserialize(memoryStream);
+                    Logger.Log($"Processing packet with key: {keyType}", LogLevel.Debug);
+                    handler(dataObject);
+                }
+                else
+                {
+                    Logger.Log($"No handler found for key: {keyType}", LogLevel.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Error processing packet: {ex.Message}", LogLevel.Error);
             }
         });
     }

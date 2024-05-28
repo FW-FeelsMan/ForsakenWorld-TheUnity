@@ -18,7 +18,7 @@ public class DecodingData : MonoBehaviour
     private void OnClientDisconnected(int socketNum)
     {
         ClientDisconnected?.Invoke(socketNum);
-        Debug.Log($"Client disconnected event triggered for socket: {socketNum}");
+        Logger.Log($"Client disconnected event triggered for socket: {socketNum}", LogLevel.Info);
     }
 
     public DecodingData(Socket clientSocket)
@@ -26,7 +26,7 @@ public class DecodingData : MonoBehaviour
         answerToClient = new AnswerToClient(clientSocket);
         IntPtr handle = clientSocket.Handle;
         clientSocketNum = handle.ToInt32();
-        Debug.Log($"DecodingData initialized for client socket: {clientSocket.RemoteEndPoint}");
+        Logger.Log($"DecodingData initialized for client socket: {clientSocket.RemoteEndPoint}", LogLevel.Info);
         PacketHandlers();
     }
 
@@ -35,20 +35,20 @@ public class DecodingData : MonoBehaviour
         PacketHandler(CommandKeys.LoginRequest, HandleLoginRequest);
         PacketHandler(CommandKeys.RegistrationRequest, HandleRegistrationRequest);
         PacketHandler(CommandKeys.GetPing, HandlePingRequest);
-        Debug.Log("Packet handlers registered.");
+        Logger.Log("Packet handlers registered.", LogLevel.Debug);
     }
 
     private void PacketHandler(string keyType, Action<object> handler)
     {
         handlers[keyType] = handler;
-        Debug.Log($"Packet handler registered for key: {keyType}");
+        Logger.Log($"Packet handler registered for key: {keyType}", LogLevel.Debug);
     }
 
     private async void HandleLoginRequest(object dataObject)
     {
         if (!(dataObject is GlobalDataClasses.UserDataObject userData))
         {
-            Debug.LogWarning("Invalid login request data.");
+            Logger.Log("Invalid login request data.", LogLevel.Warning);
             await answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, GlobalStrings.UnknownPackage);
             return;
         }
@@ -60,7 +60,7 @@ public class DecodingData : MonoBehaviour
 
         if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(hashedPassword) || string.IsNullOrEmpty(hardwareID))
         {
-            Debug.LogWarning("Login request with missing data.");
+            Logger.Log("Login request with missing data.", LogLevel.Warning);
             await answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, GlobalStrings.IncorrectData);
             return;
         }
@@ -69,7 +69,7 @@ public class DecodingData : MonoBehaviour
 
         if (!loginResult)
         {
-            Debug.LogWarning($"Failed login attempt for email: {email}");
+            Logger.Log($"Failed login attempt for email: {email}", LogLevel.Warning);
             await answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, GlobalStrings.FailedLogin);
             return;
         }
@@ -77,7 +77,7 @@ public class DecodingData : MonoBehaviour
         int userId = await dataHandler.GetUserIdByEmailAsync(email);
         if (!int.TryParse(await dataHandler.IsUserActiveAsync(email), out int status))
         {
-            Debug.LogError($"Failed to convert user status to integer for email: {email}");
+            Logger.Log($"Failed to convert user status to integer for email: {email}", LogLevel.Error);
             return;
         }
 
@@ -93,18 +93,18 @@ public class DecodingData : MonoBehaviour
                     if (clientSocket != null)
                     {
                         SocketServer.Instance.RemoveClient(clientSocket);
-                        Debug.Log($"Forced login for email: {email}");
+                        Logger.Log($"Forced login for email: {email}", LogLevel.Info);
                         await answerToClient.ServerResponseWrapper(CommandKeys.DisconnectKey, GlobalStrings.ForcedLogin);
                     }
                     else
                     {
-                        Debug.LogError($"Socket with number {currentActiveSocketNum} not found.");
+                        Logger.Log($"Socket with number {currentActiveSocketNum} not found.", LogLevel.Error);
                     }
                 }
             }
             else
             {
-                Debug.LogWarning($"User already online: {email}");
+                Logger.Log($"User already online: {email}", LogLevel.Warning);
                 await answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, GlobalStrings.UserIsAlreadyOnline);
                 return;
             }
@@ -113,7 +113,7 @@ public class DecodingData : MonoBehaviour
         await dataHandler.SetClientStatusAsync(email, 1);
         await dataHandler.SetSocketClientAsync(email, clientSocketNum);
         await answerToClient.ServerResponseWrapper(CommandKeys.SuccessfulLogin, GlobalStrings.WelcomeMessage);
-        Debug.Log($"User logged in successfully: {email}");
+        Logger.Log($"User logged in successfully: {email}", LogLevel.Info);
     }
 
     private async void HandleRegistrationRequest(object dataObject)
@@ -126,7 +126,7 @@ public class DecodingData : MonoBehaviour
 
             if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(hashedPassword) || string.IsNullOrEmpty(hardwareID))
             {
-                Debug.LogWarning("Registration request with missing data.");
+                Logger.Log("Registration request with missing data.", LogLevel.Warning);
                 await answerToClient.ServerResponseWrapper(CommandKeys.FailedRegistration, GlobalStrings.IncorrectData);
             }
             else
@@ -136,11 +136,11 @@ public class DecodingData : MonoBehaviour
                 if (registerResult)
                 {
                     await answerToClient.ServerResponseWrapper(CommandKeys.SuccessfulRegistration, GlobalStrings.SuccessfulRegistration);
-                    Debug.Log($"User registered successfully: {email}");
+                    Logger.Log($"User registered successfully: {email}", LogLevel.Info);
                 }
                 else
                 {
-                    Debug.LogWarning($"Registration error - email exists: {email}");
+                    Logger.Log($"Registration error - email exists: {email}", LogLevel.Warning);
                     await answerToClient.ServerResponseWrapper(CommandKeys.FailedRegistration, GlobalStrings.RegistrationErrorEmailExists);
                 }
             }
@@ -155,19 +155,19 @@ public class DecodingData : MonoBehaviour
             if (!string.IsNullOrEmpty(emailUserInLogged))
             {
                 await dataHandler.SetClientStatusAsync(emailUserInLogged, 0);
-                Debug.Log($"Client status set to offline for email: {emailUserInLogged}");
+                Logger.Log($"Client status set to offline for email: {emailUserInLogged}", LogLevel.Info);
             }
         }
         catch (Exception ex)
         {
-            Debug.LogError($"Ошибка при отключении клиента: {ex.Message}");
+            Logger.Log($"Ошибка при отключении клиента: {ex.Message}", LogLevel.Error);
         }
     }
 
     public void GetClientSocket(string email)
     {
         currentActiveSocketNum = dataHandler.GetClientSocketNumAsync(email).Result;
-        Debug.Log($"Retrieved client socket number for email: {email} - {currentActiveSocketNum}");
+        Logger.Log($"Retrieved client socket number for email: {email} - {currentActiveSocketNum}", LogLevel.Info);
     }
 
     private async void HandlePingRequest(object dataObject)
@@ -175,7 +175,7 @@ public class DecodingData : MonoBehaviour
         if (dataObject is GlobalDataClasses.RequestFromUser userRequest)
         {
             string pingValue = userRequest.GetPing;
-            Debug.Log($"Received ping request with value: {pingValue}");
+            Logger.Log($"Received ping request with value: {pingValue}", LogLevel.Debug);
 
             await answerToClient.ServerResponseWrapper(CommandKeys.GetPing, GlobalStrings.GetPongMessage);
         }
@@ -193,12 +193,12 @@ public class DecodingData : MonoBehaviour
             if (handlers.TryGetValue(keyType, out var handler))
             {
                 object dataObject = formatter.Deserialize(memoryStream);
-                Debug.Log($"Processing packet with key: {keyType}");
+                Logger.Log($"Processing packet with key: {keyType}", LogLevel.Debug);
                 handler(dataObject);
             }
             else
             {
-                Debug.LogWarning($"No handler found for key: {keyType}");
+                Logger.Log($"No handler found for key: {keyType}", LogLevel.Warning);
             }
         });
     }

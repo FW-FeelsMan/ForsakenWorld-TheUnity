@@ -1,3 +1,4 @@
+// File: RequestToServer.cs
 using System;
 using System.Collections;
 using System.IO;
@@ -15,6 +16,7 @@ public class RequestToServer : MonoBehaviour
     {
         uIManager = GetComponent<UIManager>();
         userInputManager = GetComponent<UserInputManager>();
+        Logger.CurrentLogLevel = LogLevel.Debug; // Set the desired log level here
     }
 
     public void OnLoginButtonClicked()
@@ -38,12 +40,14 @@ public class RequestToServer : MonoBehaviour
         {
             isValid = false;
             errorMessage = GlobalStrings.UnknownRequestType;
+            Logger.Log("Unknown request type.", LogLevel.Warning);
         }
 
         if (keyType == CommandKeys.LoginRequest && !EmailValidator.IsValidEmail(userInput.Email))
         {
             isValid = false;
             errorMessage = GlobalStrings.IncorrectEmail;
+            Logger.Log("Invalid email format for login request.", LogLevel.Warning);
         }
         else if (keyType == CommandKeys.RegistrationRequest)
         {
@@ -51,21 +55,25 @@ public class RequestToServer : MonoBehaviour
             {
                 isValid = false;
                 errorMessage = GlobalStrings.IncorrectEmail;
+                Logger.Log("Invalid email format for registration request.", LogLevel.Warning);
             }
             else if (!EmailValidator.IsValidPassword(userInput.Password))
             {
                 isValid = false;
                 errorMessage = GlobalStrings.IncorrectPassword;
+                Logger.Log("Invalid password format for registration request.", LogLevel.Warning);
             }
             else if (userInput.Password != userInput.ConfirmPassword)
             {
                 isValid = false;
                 errorMessage = GlobalStrings.PasswordMismatch;
+                Logger.Log("Password mismatch in registration request.", LogLevel.Warning);
             }
             else if (!userInputManager.ConditionTerminsCheck.isOn)
             {
                 isValid = false;
                 errorMessage = GlobalStrings.UserAgreementFail;
+                Logger.Log("User agreement not accepted in registration request.", LogLevel.Warning);
             }
         }
 
@@ -75,26 +83,27 @@ public class RequestToServer : MonoBehaviour
         }
         else
         {
+            Logger.Log("Sending user data request...", LogLevel.Info);
             var task = UserData(keyType, userInput.Email, userInput.Password, userInputManager.forceLoginRequested.isOn);
             yield return new WaitUntil(() => task.IsCompleted);
+            Logger.Log("User data request sent successfully.", LogLevel.Info);
         }
-
     }
 
-    public static async Task<byte[]> UserData(string _keyType, string _email, string _password, bool _forceLoginRequested)
+    public static async Task<byte[]> UserData(string keyType, string email, string password, bool forceLoginRequested)
     {
-        var _hashedPassword = GlobalStrings.Hashing(_password);
-        var _hardwareID = GlobalStrings.GetHardwareID();
-        var _dataObject = new GlobalDataClasses.UserDataObject
+        var hashedPassword = GlobalStrings.Hashing(password);
+        var hardwareID = GlobalStrings.GetHardwareID();
+        var dataObject = new GlobalDataClasses.UserDataObject
         {
-            KeyType = _keyType,
-            Email = _email,
-            HashedPassword = _hashedPassword,
-            HardwareID = _hardwareID,
-            ForceLoginRequested = _forceLoginRequested
+            KeyType = keyType,
+            Email = email,
+            HashedPassword = hashedPassword,
+            HardwareID = hardwareID,
+            ForceLoginRequested = forceLoginRequested
         };
 
-        return await RequestTypeAsync(_keyType, _dataObject);
+        return await RequestTypeAsync(keyType, dataObject);
     }
 
     public static async Task<byte[]> RequestTypeAsync(string keyType, object dataObject)
@@ -118,13 +127,13 @@ public class RequestToServer : MonoBehaviour
             }
 
             SocketClient.Instance.SendData(requestData);
-            Debug.Log($"Отправлено: {keyType}");
+            Logger.Log($"Sent request to server: {keyType}", LogLevel.Info);
 
             return requestData;
         }
         catch (Exception ex)
         {
-            LogProcessor.ProcessLog(FWL.GetClassName(), $"Error in RequestTypeAsync: {ex.Message}");
+            Logger.Log($"Error in RequestTypeAsync: {ex.Message}", LogLevel.Error);
             return null;
         }
     }
