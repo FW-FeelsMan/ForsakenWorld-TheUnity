@@ -84,7 +84,7 @@ public class SocketClient : Singleton<SocketClient>
         }
     }
 
-    private async Task<bool> IsPacketReceivedWithinTimeout()
+    /*private async Task<bool> IsPacketReceivedWithinTimeout()
     {
         int timeoutMilliseconds = 5000;
         int checkInterval = 100; 
@@ -109,7 +109,7 @@ public class SocketClient : Singleton<SocketClient>
         }
         Logger.Log("Timeout waiting for packet from server.", LogLevel.Warning);
         return false;
-    }
+    }*/
 
     private async Task ConnectToServerAsync()
     {

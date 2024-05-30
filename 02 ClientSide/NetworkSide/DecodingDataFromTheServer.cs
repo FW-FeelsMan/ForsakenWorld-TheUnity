@@ -15,7 +15,7 @@ public class DecodingDataFromServer : MonoBehaviour
     public DecodingDataFromServer()
     {
         PacketHandlers();
-        Logger.CurrentLogLevel = LogLevel.Debug; // Set the desired log level here
+        Logger.CurrentLogLevel = LogLevel.Debug; 
     }
 
     private void PacketHandlers()
@@ -46,9 +46,7 @@ public class DecodingDataFromServer : MonoBehaviour
             switch (key)
             {
                 case CommandKeys.SuccessfulLogin:
-                    EnqueueMainThreadAction(() => UIManager.instance.ShowMenu());
-                    EnqueueMainThreadAction(() => PingManager.instance.StartSendingPings());
-                    EnqueueMainThreadAction(() => PullClientData.instance.RequestClientData());
+                    EnqueueMainThreadAction(() => UIManager.instance.ShowMenu());                    
                     break;
                 case CommandKeys.FailedLogin:
                     EnqueueMainThreadAction(() => UIManager.instance.DisplayAnswer(0, message));

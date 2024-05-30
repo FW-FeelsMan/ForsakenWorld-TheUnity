@@ -2,8 +2,8 @@ using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
-using System.IO;
 using System.Collections.Generic;
+using System.IO;
 
 public class SocketServer : Singleton<SocketServer>
 {
@@ -11,7 +11,7 @@ public class SocketServer : Singleton<SocketServer>
     private bool _isListening;
     private Socket _listener;
     private readonly int _port = 26950;
-    public static List<Socket> connectedClients = new();
+    private List<Socket> connectedClients = new();
 
     private void Update()
     {
@@ -87,6 +87,8 @@ public class SocketServer : Singleton<SocketServer>
             using NetworkStream networkStream = new(client);
             using BinaryReader reader = new(networkStream);
 
+            AddClient(client);
+
             while (client != null && client.Connected)
             {
                 try
@@ -95,15 +97,13 @@ public class SocketServer : Singleton<SocketServer>
                     if (isDisconnected)
                     {
                         Logger.Log($"Client disconnected: {client.RemoteEndPoint}", LogLevel.Warning);
-                        decodingData.ClientisDisconnected();
-                        RemoveClient(client);
+                        await RemoveClientAsync(client, decodingData);
                         break;
                     }
 
                     byte[] buffer = new byte[1024];
                     int bytesRead = await networkStream.ReadAsync(buffer, 0, buffer.Length);
 
-                    AddClient(client);
                     if (bytesRead > 0)
                     {
                         Logger.Log($"Received {bytesRead} bytes from {client.RemoteEndPoint}", LogLevel.Debug);
@@ -113,6 +113,7 @@ public class SocketServer : Singleton<SocketServer>
                 catch (Exception ex)
                 {
                     Logger.Log($"Error handling client {client.RemoteEndPoint}: {ex.Message}", LogLevel.Error);
+                    await RemoveClientAsync(client, decodingData);
                     break;
                 }
 
@@ -134,6 +135,14 @@ public class SocketServer : Singleton<SocketServer>
         }
     }
 
+    public async Task RemoveClientAsync(Socket client, DecodingData decodingData)
+    {
+        await decodingData.ClientisDisconnected();
+        connectedClients.Remove(client);
+        client.Close();
+        Logger.Log("Client removed: " + client.RemoteEndPoint, LogLevel.Info);
+    }
+
     public void RemoveClient(Socket client)
     {
         connectedClients.Remove(client);
@@ -141,15 +150,9 @@ public class SocketServer : Singleton<SocketServer>
         Logger.Log("Client removed: " + client.RemoteEndPoint, LogLevel.Info);
     }
 
-    public void ForceRemoveClient(int socketNum)
+    public List<Socket> GetConnectedClients()
     {
-        Socket clientToRemove = connectedClients.Find(client => ((int)client.Handle.ToInt64()) == socketNum);
-        if (clientToRemove != null)
-        {
-            connectedClients.Remove(clientToRemove);
-            clientToRemove.Close();
-            Logger.Log("Client force removed: " + clientToRemove.RemoteEndPoint, LogLevel.Info);
-        }
+        return new List<Socket>(connectedClients);
     }
 
     private void OnDestroy()
