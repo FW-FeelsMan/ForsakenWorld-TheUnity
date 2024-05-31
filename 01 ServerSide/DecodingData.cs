@@ -116,7 +116,12 @@ public class DecodingData
             var emailUserInLogged = dataHandler.GetLoggedInUserEmail();
             if (!string.IsNullOrEmpty(emailUserInLogged))
             {
-                await dataHandler.SetClientStatusAsync(emailUserInLogged, 0);
+                // Check if the disconnecting client is the current active session
+                int currentSocketNum = await dataHandler.GetClientSocketNumAsync(emailUserInLogged);
+                if (currentSocketNum == clientSocketNum)
+                {
+                    await dataHandler.SetClientStatusAsync(emailUserInLogged, 0);
+                }
             }
         }
         catch (Exception ex)
