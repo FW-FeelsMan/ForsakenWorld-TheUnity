@@ -1,4 +1,3 @@
-// File: RequestToServer.cs
 using System;
 using System.Collections;
 using System.IO;
@@ -126,7 +125,7 @@ public class RequestToServer : MonoBehaviour
                 requestData = memoryStream.ToArray();
             }
 
-            SocketClient.Instance.SendData(requestData);
+            await SocketClient.Instance.SendData(requestData);
             Logger.Log($"Sent request to server: {keyType}", LogLevel.Info);
 
             return requestData;

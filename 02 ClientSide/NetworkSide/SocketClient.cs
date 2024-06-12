@@ -1,4 +1,3 @@
-// File: SocketClient.cs
 using System;
 using System.Collections;
 using System.Net.Sockets;
@@ -71,11 +70,6 @@ public class SocketClient : Singleton<SocketClient>
 
             await _networkStream.WriteAsync(data, 0, data.Length);
             Logger.Log($"Sent {data.Length} bytes to server.", LogLevel.Debug);
-
-            /*if (!await IsPacketReceivedWithinTimeout())
-            {
-                uiManager.DisplayAnswer(0, GlobalStrings.ErrorWaitingForResponse);
-            }*/
         }
         catch (SocketException ex)
         {
@@ -83,33 +77,6 @@ public class SocketClient : Singleton<SocketClient>
             Logger.Log($"SocketException: {ex.Message}", LogLevel.Error);
         }
     }
-
-    /*private async Task<bool> IsPacketReceivedWithinTimeout()
-    {
-        int timeoutMilliseconds = 5000;
-        int checkInterval = 100; 
-        DateTime startTime = DateTime.Now;
-
-        while ((DateTime.Now - startTime).TotalMilliseconds < timeoutMilliseconds)
-        {
-            if (_networkStream.DataAvailable)
-            {
-                byte[] buffer = new byte[1024]; 
-                int bytesRead = await _networkStream.ReadAsync(buffer, 0, buffer.Length);
-                if (bytesRead > 0)
-                {
-                    Logger.Log($"Received {bytesRead} bytes from server.", LogLevel.Debug);
-                    return true;
-                }
-            }
-            else
-            {
-                await Task.Delay(checkInterval);
-            }
-        }
-        Logger.Log("Timeout waiting for packet from server.", LogLevel.Warning);
-        return false;
-    }*/
 
     private async Task ConnectToServerAsync()
     {

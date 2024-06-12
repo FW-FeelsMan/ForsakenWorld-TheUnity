@@ -3,8 +3,6 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using MySql.Data.MySqlClient;
-using ForsakenWorld;
-using System.Collections.Generic;
 
 public class DataHandler
 {
@@ -249,41 +247,6 @@ public class DataHandler
         }
     }
 
-    public async Task<List<Character>> GetUserCharactersAsync(int userId)
-    {
-        List<Character> characters = new();
-
-        try
-        {
-            using MySqlConnection connection = await CreateConnectionAsync();
-            string query = "SELECT character_id, class_id, gender_id, race_id, level, appearance, currency FROM characters WHERE user_id = @UserId";
-            MySqlCommand command = new(query, connection);
-            command.Parameters.AddWithValue("@UserId", userId);
-
-            using MySqlDataReader reader = (MySqlDataReader)await command.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
-            {
-                characters.Add(new Character
-                {
-                    CharacterId = reader.GetInt32("character_id"),
-                    ClassId = reader.GetInt32("class_id"),
-                    GenderId = reader.GetInt32("gender_id"),
-                    RaceId = reader.GetInt32("race_id"),
-                    Level = reader.GetInt32("level"),
-                    Appearance = reader.GetString("appearance"),
-                    Currency = reader.GetInt32("currency")
-                });
-            }
-            Logger.Log($"Loaded {characters.Count} characters for user ID: {userId}", LogLevel.Info);
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"Error loading user characters: {ex.Message}", LogLevel.Error);
-        }
-
-        return characters;
-    }
-
     public async Task<int> GetUserIdByEmailAsync(string email)
     {
         int userId = -1;
@@ -311,13 +274,3 @@ public class DataHandler
     }
 }
 
-public class Character
-{
-    public int CharacterId { get; set; }
-    public int ClassId { get; set; }
-    public int GenderId { get; set; }
-    public int RaceId { get; set; }
-    public int Level { get; set; }
-    public string Appearance { get; set; }
-    public int Currency { get; set; }
-}
