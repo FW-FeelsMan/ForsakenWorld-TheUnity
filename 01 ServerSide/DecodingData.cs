@@ -4,6 +4,7 @@ using System.IO;
 using System.Net.Sockets;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
+using ForsakenWorld;
 
 public class DecodingData
 {
@@ -63,8 +64,7 @@ public class DecodingData
         if (userStatus == "1")
         {
             if (forceLoginRequested)
-            {
-                // Выполняем принудительный вход
+            {                
                 await ForceDisconnectOtherClientsAsync(email);
             }
             else
@@ -79,6 +79,15 @@ public class DecodingData
         await dataHandler.SetSocketClientAsync(email, clientSocketNum);
         await answerToClient.ServerResponseWrapper(CommandKeys.SuccessfulLogin, GlobalStrings.WelcomeMessage);
         Logger.Log($"Login successful for user {email}.", LogLevel.Info);
+        
+        var characters = await dataHandler.GetUserCharactersAsync(email);
+        foreach (var character in characters)
+        {
+            string className = Character.GetClassName(character.ClassId);
+            string genderName = Character.GetGenderName(character.GenderId);
+            string raceName = Character.GetRaceName(character.RaceId);
+            Logger.Log($"Character: {character.CharacterId}, Class: {className}, Gender: {genderName}, Race: {raceName}, Level: {character.Level}", LogLevel.Info);
+        }
     }
 
     private async void HandleRegistrationRequest(object dataObject)
@@ -159,4 +168,5 @@ public class DecodingData
             Logger.Log($"Client force removed: {client.RemoteEndPoint}", LogLevel.Info);
         }
     }
+    
 }

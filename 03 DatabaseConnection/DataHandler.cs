@@ -1,8 +1,9 @@
-// File: DataHandler.cs
 using System;
 using System.IO;
 using System.Threading.Tasks;
 using MySql.Data.MySqlClient;
+using ForsakenWorld;
+using System.Collections.Generic;
 
 public class DataHandler
 {
@@ -247,6 +248,50 @@ public class DataHandler
         }
     }
 
+    public async Task<List<Character>> GetUserCharactersAsync(string email)
+    {
+        List<Character> characters = new();
+
+        try
+        {
+            using MySqlConnection connection = await CreateConnectionAsync();
+            string query = @"SELECT c.character_id, c.user_id, c.class_id, c.gender_id, c.race_id, c.level, c.appearance, c.currency, c.gold_currency, c.character_status
+                         FROM characters c
+                         JOIN user_data u ON c.user_id = u.id
+                         WHERE u.email = @Email";
+            MySqlCommand command = new(query, connection);
+            command.Parameters.AddWithValue("@Email", email);
+
+            using MySqlDataReader reader = (MySqlDataReader)await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                characters.Add(new Character
+                {
+                    CharacterId = reader.GetInt32("character_id"),
+                    UserId = reader.GetInt32("user_id"),
+                    ClassId = reader.GetInt32("class_id"),
+                    GenderId = reader.GetInt32("gender_id"),
+                    RaceId = reader.GetInt32("race_id"),
+                    Level = reader.GetInt32("level"),
+                    Appearance = reader.GetString("appearance"),
+                    Currency = reader.GetInt32("currency"),
+                    GoldCurrency = reader.GetInt32("gold_currency"),
+                    CharacterStatus = reader.GetInt32("character_status"),
+                    ClassName = Character.GetClassName(reader.GetInt32("class_id")),
+                    GenderName = Character.GetGenderName(reader.GetInt32("gender_id")),
+                    RaceName = Character.GetRaceName(reader.GetInt32("race_id"))
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Error loading user characters: {ex.Message}", LogLevel.Error);
+        }
+
+        return characters;
+    }
+
+
     public async Task<int> GetUserIdByEmailAsync(string email)
     {
         int userId = -1;
@@ -273,4 +318,3 @@ public class DataHandler
         return userId;
     }
 }
-
