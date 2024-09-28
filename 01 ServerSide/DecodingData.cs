@@ -139,7 +139,7 @@ public class DecodingData
         }
     }
 
-    public async Task ProcessPacketAsync(byte[] packet)
+    /*public async Task ProcessPacketAsync(byte[] packet)
     {
         await Task.Run(() =>
         {
@@ -154,6 +154,10 @@ public class DecodingData
                 handler(dataObject);
             }
         });
+    }*/
+    public async Task ProcessPacketAsync(byte[] packet)
+    {
+        await PacketProcessor.ProcessPacketAsync(packet, handlers);
     }
 
     private async Task ForceDisconnectOtherClientsAsync(string email)

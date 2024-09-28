@@ -4,6 +4,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using UnityEngine;
+using ForsakenWorld;
 
 public class AnswerToClient : MonoBehaviour
 {
@@ -51,7 +52,7 @@ public class AnswerToClient : MonoBehaviour
                 requestData = memoryStream.ToArray();
             }
 
-            await SendDataAsync(requestData);
+            await PacketProcessor.SendDataAsync(clientSocket, requestData);
             Logger.Log($"Отправлен ответ на {keyType}", LogLevel.Info);
         }
         catch (Exception ex)
@@ -61,7 +62,7 @@ public class AnswerToClient : MonoBehaviour
         }
     }
 
-    private async Task SendDataAsync(byte[] data)
+    /*private async Task SendDataAsync(byte[] data)
     {
         try
         {
@@ -74,7 +75,7 @@ public class AnswerToClient : MonoBehaviour
             Logger.Log($"Error sending data: {ex.Message}", LogLevel.Error);
             CloseClientSocket();
         }
-    }
+    }*/
 
     private void CloseClientSocket()
     {

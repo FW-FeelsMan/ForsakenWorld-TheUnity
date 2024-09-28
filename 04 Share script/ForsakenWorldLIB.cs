@@ -1,3 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Net.Sockets;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Threading.Tasks;
+
 namespace ForsakenWorld
 {
     public class Character
@@ -35,7 +42,7 @@ namespace ForsakenWorld
                 12 => "Mage",
                 13 => "Paladin",
                 14 => "Crosshear",
-                15 => "Bard",              
+                15 => "Bard",
                 16 => "Dark Knight",
                 17 => "Necromancer",
                 _ => "Unknown Class"
@@ -65,6 +72,39 @@ namespace ForsakenWorld
                 7 => "Vesperian",
                 _ => "Unknown Race"
             };
+        }
+    }
+    public class PacketProcessor
+    {
+        public static async Task ProcessPacketAsync(byte[] packet, Dictionary<string, Action<object>> handlers)
+        {
+            await Task.Run(() =>
+            {
+                using MemoryStream memoryStream = new(packet);
+                var formatter = new BinaryFormatter();
+
+                string keyType = (string)formatter.Deserialize(memoryStream);
+
+                if (handlers.TryGetValue(keyType, out var handler))
+                {
+                    object dataObject = formatter.Deserialize(memoryStream);
+                    handler(dataObject);
+                }
+            });
+        }
+        public static async Task SendDataAsync(Socket clientSocket, byte[] data)
+        {
+            try
+            {
+                using NetworkStream networkStream = new(clientSocket);
+                await networkStream.WriteAsync(data, 0, data.Length);
+                Logger.Log("Data sent successfully.", LogLevel.Info);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Error sending data: {ex.Message}", LogLevel.Error);
+                //onFailure?.Invoke();
+            }
         }
     }
 }

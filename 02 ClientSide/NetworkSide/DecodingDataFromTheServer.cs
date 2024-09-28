@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
 using UnityEngine;
+using ForsakenWorld;
 
 public class DecodingDataFromServer : MonoBehaviour
 {
@@ -13,7 +12,7 @@ public class DecodingDataFromServer : MonoBehaviour
     public DecodingDataFromServer()
     {
         PacketHandlers();
-        Logger.CurrentLogLevel = LogLevel.Debug; 
+        Logger.CurrentLogLevel = LogLevel.Debug;
     }
 
     private void PacketHandlers()
@@ -44,7 +43,7 @@ public class DecodingDataFromServer : MonoBehaviour
             switch (key)
             {
                 case CommandKeys.SuccessfulLogin:
-                    EnqueueMainThreadAction(() => UIManager.instance.ShowMenu());                    
+                    EnqueueMainThreadAction(() => UIManager.instance.ShowMenu());
                     break;
                 case CommandKeys.FailedLogin:
                     EnqueueMainThreadAction(() => UIManager.instance.DisplayAnswer(0, message));
@@ -85,32 +84,24 @@ public class DecodingDataFromServer : MonoBehaviour
         }
     }
 
-    public async Task ProcessPacketAsync(byte[] packet)
+    /*public async Task ProcessPacketAsync(byte[] packet)
     {
         await Task.Run(() =>
         {
-            try
-            {
-                using MemoryStream memoryStream = new(packet);
-                var formatter = new BinaryFormatter();
+            using MemoryStream memoryStream = new(packet);
+            var formatter = new BinaryFormatter();
 
-                string keyType = (string)formatter.Deserialize(memoryStream);
+            string keyType = (string)formatter.Deserialize(memoryStream);
 
-                if (handlers.TryGetValue(keyType, out var handler))
-                {
-                    object dataObject = formatter.Deserialize(memoryStream);
-                    Logger.Log($"Processing packet with key: {keyType}", LogLevel.Debug);
-                    handler(dataObject);
-                }
-                else
-                {
-                    Logger.Log($"No handler found for key: {keyType}", LogLevel.Warning);
-                }
-            }
-            catch (Exception ex)
+            if (handlers.TryGetValue(keyType, out var handler))
             {
-                Logger.Log($"Error processing packet: {ex.Message}", LogLevel.Error);
+                object dataObject = formatter.Deserialize(memoryStream);
+                handler(dataObject);
             }
         });
+    }*/
+    public async Task ProcessPacketAsync(byte[] packet)
+    {
+        await PacketProcessor.ProcessPacketAsync(packet, handlers);
     }
 }
