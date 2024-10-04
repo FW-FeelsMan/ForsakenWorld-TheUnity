@@ -9,7 +9,7 @@ public class EmailValidator
 
     public static bool IsValidEmail(string emailAddress)
     {
-        if (string.IsNullOrEmpty(emailAddress))
+        if (string.IsNullOrWhiteSpace(emailAddress))
         {
             return false;
         }
@@ -20,7 +20,7 @@ public class EmailValidator
 
     public static bool IsValidPassword(string password)
     {
-        if (string.IsNullOrEmpty(password))
+        if (string.IsNullOrWhiteSpace(password))
         {
             return false;
         }

@@ -4,7 +4,6 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using UnityEngine;
-using ForsakenWorld;
 
 public class AnswerToClient : MonoBehaviour
 {
@@ -27,7 +26,7 @@ public class AnswerToClient : MonoBehaviour
             KeyType = keyType,
             Message = message
         };
-        Logger.Log($"Отправлено: {keyType}, {message}", LogLevel.Info);
+        ThreadSafeLogger.Log($"РћС‚РїСЂР°РІР»РµРЅРѕ: {keyType}, {message}");
 
         await RequestTypeAsync(keyType, dataObject);
     }
@@ -52,30 +51,30 @@ public class AnswerToClient : MonoBehaviour
                 requestData = memoryStream.ToArray();
             }
 
-            await PacketProcessor.SendDataAsync(clientSocket, requestData);
-            Logger.Log($"Отправлен ответ на {keyType}", LogLevel.Info);
+            await SendDataAsync(requestData);
+            //ThreadSafeLogger.Log($"РћС‚РїСЂР°РІР»РµРЅ РєР»СЋС‡: {keyType}");
         }
         catch (Exception ex)
         {
-            Logger.Log($"Error in RequestTypeAsync: {ex.Message}", LogLevel.Error);
+            ThreadSafeLogger.Log($"Error in RequestTypeAsync: {ex.Message}");
             CloseClientSocket();
         }
     }
 
-    /*private async Task SendDataAsync(byte[] data)
+    private async Task SendDataAsync(byte[] data)
     {
         try
         {
             using NetworkStream networkStream = new(clientSocket);
             await networkStream.WriteAsync(data, 0, data.Length);
-            Logger.Log("Data sent to client.", LogLevel.Info);
+            //ThreadSafeLogger.Log("Data sent to client.");
         }
         catch (Exception ex)
         {
-            Logger.Log($"Error sending data: {ex.Message}", LogLevel.Error);
+            ThreadSafeLogger.Log($"Error sending data: {ex.Message}");
             CloseClientSocket();
         }
-    }*/
+    }
 
     private void CloseClientSocket()
     {
@@ -83,11 +82,11 @@ public class AnswerToClient : MonoBehaviour
         {
             clientSocket.Shutdown(SocketShutdown.Both);
             clientSocket.Close();
-            Logger.Log("Client socket closed.", LogLevel.Info);
+            ThreadSafeLogger.Log("Client socket closed.");
         }
         catch (Exception ex)
         {
-            Logger.Log($"Error closing socket: {ex.Message}", LogLevel.Error);
+            ThreadSafeLogger.Log($"Error closing socket: {ex.Message}");
         }
     }
 }

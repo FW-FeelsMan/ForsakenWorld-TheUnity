@@ -23,26 +23,26 @@ public class DataHandler
 
             if (result == null || (string)result != hashedPassword)
             {
-                Logger.Log("Login failed: incorrect password.", LogLevel.Warning);
+                
                 return false;
             }
 
             if (forceLoginRequested)
             {
                 await SetClientStatusAsync(email, 0);
-                Logger.Log("Forced login: user status set to 0.", LogLevel.Info);
+                
             }
 
             await UpdateDeviceIdAsync(email, hardwareID);
             await WriteIDFileAsync(email, hardwareID, DateTime.Now);
             loggedInUserEmail = email;
 
-            Logger.Log("Login successful.", LogLevel.Info);
+            
             return true;
         }
         catch (Exception ex)
         {
-            Logger.Log($"Error handling login data: {ex.Message}", LogLevel.Error);
+            ThreadSafeLogger.Log(ex.ToString());
             return false;
         }
     }
@@ -59,7 +59,7 @@ public class DataHandler
 
             if (count > 0)
             {
-                Logger.Log("Registration failed: email already exists.", LogLevel.Warning);
+                
                 return false;
             }
 
@@ -82,16 +82,16 @@ public class DataHandler
                 await CreateIDFileAsync(userId, hardwareID, DateTime.Now);
                 await SetClientStatusAsync(email, 0);
 
-                Logger.Log("Registration successful.", LogLevel.Info);
+                
                 return true;
             }
 
-            Logger.Log("Registration failed: no rows affected.", LogLevel.Warning);
+            
             return false;
         }
         catch (Exception ex)
         {
-            Logger.Log($"Error handling registration data: {ex.Message}", LogLevel.Error);
+            ThreadSafeLogger.Log(ex.ToString());
             return false;
         }
     }
@@ -106,11 +106,11 @@ public class DataHandler
             command.Parameters.AddWithValue("@Status", status);
             command.Parameters.AddWithValue("@Email", email);
             await command.ExecuteNonQueryAsync();
-            Logger.Log($"Client status updated: {status} for email: {email}", LogLevel.Info);
+            
         }
         catch (Exception ex)
         {
-            Logger.Log($"Error updating client status: {ex.Message}", LogLevel.Error);
+            ThreadSafeLogger.Log(ex.ToString());
         }
     }
 
@@ -124,11 +124,11 @@ public class DataHandler
             command.Parameters.AddWithValue("@SocketClient", socketClient);
             command.Parameters.AddWithValue("@Email", email);
             await command.ExecuteNonQueryAsync();
-            Logger.Log($"Socket client updated: {socketClient} for email: {email}", LogLevel.Info);
+            
         }
         catch (Exception ex)
         {
-            Logger.Log($"Error updating socket client: {ex.Message}", LogLevel.Error);
+            ThreadSafeLogger.Log(ex.ToString());
         }
     }
 
@@ -142,11 +142,11 @@ public class DataHandler
             command.Parameters.AddWithValue("@IdDevice", hardwareID);
             command.Parameters.AddWithValue("@Email", email);
             await command.ExecuteNonQueryAsync();
-            Logger.Log($"Device ID updated: {hardwareID} for email: {email}", LogLevel.Info);
+            
         }
         catch (Exception ex)
         {
-            Logger.Log($"Error updating device ID: {ex.Message}", LogLevel.Error);
+            ThreadSafeLogger.Log(ex.ToString());
         }
     }
 
@@ -161,12 +161,12 @@ public class DataHandler
 
             object result = await getStatusCommand.ExecuteScalarAsync();
             string status = result != null ? (Convert.ToInt32(result) == 1 ? "1" : "0") : "-1";
-            Logger.Log($"User active status: {status} for email: {email}", LogLevel.Info);
+            
             return status;
         }
         catch (Exception ex)
         {
-            Logger.Log($"Error checking user active status: {ex.Message}", LogLevel.Error);
+            ThreadSafeLogger.Log(ex.ToString());
             return "-1";
         }
     }
@@ -175,7 +175,7 @@ public class DataHandler
     {
         MySqlConnection connection = new(connectionString);
         await connection.OpenAsync();
-        Logger.Log("Database connection opened.", LogLevel.Debug);
+        
         return connection;
     }
 
@@ -195,11 +195,11 @@ public class DataHandler
 
             using StreamWriter writer = new(fullPath, true);
             await writer.WriteLineAsync($"Device ID: {deviceId}, Last Login Date: {lastLoginDate}");
-            Logger.Log($"ID file written for user: {userId}", LogLevel.Info);
+            
         }
         catch (Exception ex)
         {
-            Logger.Log($"Error writing ID file: {ex.Message}", LogLevel.Error);
+            ThreadSafeLogger.Log(ex.ToString());
         }
     }
 
@@ -213,17 +213,17 @@ public class DataHandler
 
             using StreamWriter writer = new(fullPath, true);
             await writer.WriteLineAsync($"Device ID: {deviceId}, Last Login Date: {lastLoginDate}");
-            Logger.Log($"ID file created for user: {userId}", LogLevel.Info);
+            
         }
         catch (Exception ex)
         {
-            Logger.Log($"Error creating ID file: {ex.Message}", LogLevel.Error);
+           ThreadSafeLogger.Log(ex.ToString()); 
         }
     }
 
     public string GetLoggedInUserEmail()
     {
-        Logger.Log($"Logged in user email: {loggedInUserEmail}", LogLevel.Debug);
+        
         return loggedInUserEmail;
     }
 
@@ -238,12 +238,12 @@ public class DataHandler
 
             object result = await command.ExecuteScalarAsync();
             int socketClient = result != null && result != DBNull.Value ? Convert.ToInt32(result) : -1;
-            Logger.Log($"Socket client number: {socketClient} for email: {email}", LogLevel.Info);
+            
             return socketClient;
         }
         catch (Exception ex)
         {
-            Logger.Log($"Error getting client socket number: {ex.Message}", LogLevel.Error);
+            ThreadSafeLogger.Log(ex.ToString());
             return -1;
         }
     }
@@ -285,7 +285,7 @@ public class DataHandler
         }
         catch (Exception ex)
         {
-            Logger.Log($"Error loading user characters: {ex.Message}", LogLevel.Error);
+            ThreadSafeLogger.Log(ex.ToString());
         }
 
         return characters;
@@ -307,12 +307,12 @@ public class DataHandler
             if (result != null && result != DBNull.Value)
             {
                 userId = Convert.ToInt32(result);
-                Logger.Log($"User ID: {userId} for email: {email}", LogLevel.Info);
+                
             }
         }
         catch (Exception ex)
         {
-            Logger.Log($"Error getting user ID: {ex.Message}", LogLevel.Error);
+            ThreadSafeLogger.Log(ex.ToString());
         }
 
         return userId;

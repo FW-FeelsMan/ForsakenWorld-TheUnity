@@ -1,3 +1,4 @@
+// File: RequestToServer.cs
 using System;
 using System.Collections;
 using System.IO;
@@ -14,8 +15,7 @@ public class RequestToServer : MonoBehaviour
     void Start()
     {
         uIManager = GetComponent<UIManager>();
-        userInputManager = GetComponent<UserInputManager>();
-        Logger.CurrentLogLevel = LogLevel.Debug; // Set the desired log level here
+        userInputManager = GetComponent<UserInputManager>();        
     }
 
     public void OnLoginButtonClicked()
@@ -39,14 +39,14 @@ public class RequestToServer : MonoBehaviour
         {
             isValid = false;
             errorMessage = GlobalStrings.UnknownRequestType;
-            Logger.Log("Unknown request type.", LogLevel.Warning);
+             ThreadSafeLogger.Log("Unknown request type.");
         }
 
         if (keyType == CommandKeys.LoginRequest && !EmailValidator.IsValidEmail(userInput.Email))
         {
             isValid = false;
             errorMessage = GlobalStrings.IncorrectEmail;
-            Logger.Log("Invalid email format for login request.", LogLevel.Warning);
+             ThreadSafeLogger.Log("Invalid email format for login request.");
         }
         else if (keyType == CommandKeys.RegistrationRequest)
         {
@@ -54,25 +54,25 @@ public class RequestToServer : MonoBehaviour
             {
                 isValid = false;
                 errorMessage = GlobalStrings.IncorrectEmail;
-                Logger.Log("Invalid email format for registration request.", LogLevel.Warning);
+                 ThreadSafeLogger.Log("Invalid email format for registration request.");
             }
             else if (!EmailValidator.IsValidPassword(userInput.Password))
             {
                 isValid = false;
                 errorMessage = GlobalStrings.IncorrectPassword;
-                Logger.Log("Invalid password format for registration request.", LogLevel.Warning);
+                 ThreadSafeLogger.Log("Invalid password format for registration request.");
             }
             else if (userInput.Password != userInput.ConfirmPassword)
             {
                 isValid = false;
                 errorMessage = GlobalStrings.PasswordMismatch;
-                Logger.Log("Password mismatch in registration request.", LogLevel.Warning);
+                 ThreadSafeLogger.Log("Password mismatch in registration request.");
             }
-            else if (!userInputManager.ConditionTerminsCheck.isOn)
+            else if (!userInputManager.conditionTerminsCheck.isOn)
             {
                 isValid = false;
                 errorMessage = GlobalStrings.UserAgreementFail;
-                Logger.Log("User agreement not accepted in registration request.", LogLevel.Warning);
+                 ThreadSafeLogger.Log("User agreement not accepted in registration request.");
             }
         }
 
@@ -82,10 +82,10 @@ public class RequestToServer : MonoBehaviour
         }
         else
         {
-            Logger.Log("Sending user data request...", LogLevel.Info);
+             
             var task = UserData(keyType, userInput.Email, userInput.Password, userInputManager.forceLoginRequested.isOn);
             yield return new WaitUntil(() => task.IsCompleted);
-            Logger.Log("User data request sent successfully.", LogLevel.Info);
+             
         }
     }
 
@@ -126,13 +126,13 @@ public class RequestToServer : MonoBehaviour
             }
 
             await SocketClient.Instance.SendData(requestData);
-            Logger.Log($"Sent request to server: {keyType}", LogLevel.Info);
+             ThreadSafeLogger.Log($"Sent request to server: {keyType}");
 
             return requestData;
         }
         catch (Exception ex)
         {
-            Logger.Log($"Error in RequestTypeAsync: {ex.Message}", LogLevel.Error);
+             ThreadSafeLogger.Log($"Error in RequestTypeAsync: {ex.Message}");
             return null;
         }
     }

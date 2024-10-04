@@ -1,8 +1,11 @@
+
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
-using UnityEngine;
 using ForsakenWorld;
+using UnityEngine;
 
 public class DecodingDataFromServer : MonoBehaviour
 {
@@ -12,7 +15,6 @@ public class DecodingDataFromServer : MonoBehaviour
     public DecodingDataFromServer()
     {
         PacketHandlers();
-        Logger.CurrentLogLevel = LogLevel.Debug;
     }
 
     private void PacketHandlers()
@@ -22,13 +24,13 @@ public class DecodingDataFromServer : MonoBehaviour
         RegisterResponse(CommandKeys.SuccessfulRegistration, ResponseProcessing);
         RegisterResponse(CommandKeys.FailedRegistration, ResponseProcessing);
 
-        Logger.Log("Packet handlers registered.", LogLevel.Debug);
+        
     }
 
     private void RegisterResponse(string keyType, Action<object> handler)
     {
         handlers[keyType] = handler;
-        Logger.Log($"Response handler registered for key: {keyType}", LogLevel.Debug);
+        
     }
 
     private void ResponseProcessing(object dataObject)
@@ -38,12 +40,13 @@ public class DecodingDataFromServer : MonoBehaviour
             string key = responseData.KeyType;
             string message = responseData.Message;
 
-            Logger.Log($"Received response: \nKey: {key}; \nMessage: {message}", LogLevel.Info);
+            
 
             switch (key)
             {
                 case CommandKeys.SuccessfulLogin:
-                    EnqueueMainThreadAction(() => UIManager.instance.ShowMenu());
+                    
+                    ThreadSafeLogger.Log($"Добро пожаловать");
                     break;
                 case CommandKeys.FailedLogin:
                     EnqueueMainThreadAction(() => UIManager.instance.DisplayAnswer(0, message));
@@ -55,13 +58,13 @@ public class DecodingDataFromServer : MonoBehaviour
                     EnqueueMainThreadAction(() => UIManager.instance.DisplayAnswer(0, message));
                     break;
                 default:
-                    Logger.Log($"Unhandled key: {key}", LogLevel.Warning);
+                    ThreadSafeLogger.Log($"Unhandled key: {key}");
                     break;
             }
         }
         else
         {
-            Logger.Log("Invalid data object received.", LogLevel.Warning);
+            ThreadSafeLogger.Log("Invalid data object received.");
         }
     }
 
@@ -84,24 +87,32 @@ public class DecodingDataFromServer : MonoBehaviour
         }
     }
 
-    /*public async Task ProcessPacketAsync(byte[] packet)
+    public async Task ProcessPacketAsync(byte[] packet)
     {
         await Task.Run(() =>
         {
-            using MemoryStream memoryStream = new(packet);
-            var formatter = new BinaryFormatter();
-
-            string keyType = (string)formatter.Deserialize(memoryStream);
-
-            if (handlers.TryGetValue(keyType, out var handler))
+            try
             {
-                object dataObject = formatter.Deserialize(memoryStream);
-                handler(dataObject);
+                using MemoryStream memoryStream = new(packet);
+                var formatter = new BinaryFormatter();
+
+                string keyType = (string)formatter.Deserialize(memoryStream);
+
+                if (handlers.TryGetValue(keyType, out var handler))
+                {
+                    object dataObject = formatter.Deserialize(memoryStream);
+                    
+                    handler(dataObject);
+                }
+                else
+                {
+                    ThreadSafeLogger.Log($"No handler found for key: {keyType}");
+                }
+            }
+            catch (Exception ex)
+            {
+                ThreadSafeLogger.Log($"Error processing packet: {ex.Message}");
             }
         });
-    }*/
-    public async Task ProcessPacketAsync(byte[] packet)
-    {
-        await PacketProcessor.ProcessPacketAsync(packet, handlers);
     }
 }

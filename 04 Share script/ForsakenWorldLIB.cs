@@ -4,25 +4,25 @@ using System.IO;
 using System.Net.Sockets;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
+using UnityEngine;
 
 namespace ForsakenWorld
 {
-    public class Character
+    public class Character : MonoBehaviour
     {
-        public int CharacterId { get; set; }
-        public int UserId { get; set; }
-        public int ClassId { get; set; }
-        public int GenderId { get; set; }
-        public int RaceId { get; set; }
-        public int Level { get; set; }
-        public string Appearance { get; set; }
-        public int Currency { get; set; }
-        public int GoldCurrency { get; set; }
-        public int CharacterStatus { get; set; }
-
-        public string ClassName { get; set; }
-        public string GenderName { get; set; }
-        public string RaceName { get; set; }
+        public int CharacterId;
+        public int UserId;
+        public int ClassId;
+        public int GenderId;
+        public int RaceId;
+        public int Level;
+        public string Appearance;
+        public int Currency;
+        public int GoldCurrency;
+        public int CharacterStatus;
+        public string ClassName;
+        public string GenderName;
+        public string RaceName;
 
         public static string GetClassName(int classId)
         {
@@ -31,20 +31,6 @@ namespace ForsakenWorld
                 1 => "Warrior",
                 2 => "Cleric",
                 3 => "Assassin",
-                4 => "Jagernaut",
-                5 => "Vampire",
-                6 => "Witch",
-                7 => "Ripper",
-                8 => "Caster",
-                9 => "Defender",
-                10 => "Torturer",
-                11 => "Archer",
-                12 => "Mage",
-                13 => "Paladin",
-                14 => "Crosshear",
-                15 => "Bard",
-                16 => "Dark Knight",
-                17 => "Necromancer",
                 _ => "Unknown Class"
             };
         }
@@ -66,45 +52,129 @@ namespace ForsakenWorld
                 1 => "Demon",
                 2 => "Dworf",
                 3 => "Elf",
-                4 => "Frangor",
-                5 => "Human",
-                6 => "Likan",
-                7 => "Vesperian",
                 _ => "Unknown Race"
             };
         }
     }
-    public class PacketProcessor
+    }
+
+   /* public class PacketProcessor
     {
-        public static async Task ProcessPacketAsync(byte[] packet, Dictionary<string, Action<object>> handlers)
+        private readonly Socket clientSocket;
+
+        public PacketProcessor(Socket clientSocket)
         {
-            await Task.Run(() =>
-            {
-                using MemoryStream memoryStream = new(packet);
-                var formatter = new BinaryFormatter();
-
-                string keyType = (string)formatter.Deserialize(memoryStream);
-
-                if (handlers.TryGetValue(keyType, out var handler))
-                {
-                    object dataObject = formatter.Deserialize(memoryStream);
-                    handler(dataObject);
-                }
-            });
+            this.clientSocket = clientSocket;
         }
-        public static async Task SendDataAsync(Socket clientSocket, byte[] data)
+
+        public async Task ProcessPacketAsync(byte[] packet, Dictionary<string, Action<object>> handlers)
         {
             try
             {
-                using NetworkStream networkStream = new(clientSocket);
-                await networkStream.WriteAsync(data, 0, data.Length);
-                Logger.Log("Data sent successfully.", LogLevel.Info);
+                var keyType = await Task.Run(() => SerializationUtils.DeserializeObject<string>(packet));  // добавлен await
+                Debug.Log($"PacketProcessor: Обработка данных для ключа {keyType}");
+
+                if (handlers.TryGetValue(keyType, out var handler))
+                {
+                    var dataObject = await Task.Run(() => SerializationUtils.DeserializeObject<object>(packet)); // добавлен await
+                    if (dataObject is GlobalDataClasses.ServerResponseMessage responseMessage)
+                    {
+                        Debug.Log($"PacketProcessor: Получены данные: Ключ = {responseMessage.KeyType}, Сообщение = {responseMessage.Message}");
+                    }
+                    else
+                    {
+                        Debug.Log($"PacketProcessor: Получены данные: {dataObject}");
+                    }
+
+                    handler(dataObject);
+                }
+                else
+                {
+                    Debug.LogError($"PacketProcessor: Обработчик для ключа {keyType} не найден");
+                }
             }
             catch (Exception ex)
             {
-                Logger.Log($"Error sending data: {ex.Message}", LogLevel.Error);
-                //onFailure?.Invoke();
+                Debug.LogError($"Ошибка обработки пакета: {ex.Message}");
+            }
+        }
+
+        public async Task RequestTypeAsync(string keyType, object dataObject)
+        {
+            try
+            {
+                if (dataObject is GlobalDataClasses.ServerResponseMessage responseMessage)
+                {
+                    Debug.Log($"Отправка данных клиенту {clientSocket.RemoteEndPoint}: Ключ = {keyType}, Сообщение = {responseMessage.Message}");
+                }
+                else
+                {
+                    Debug.Log($"Отправка данных клиенту {clientSocket.RemoteEndPoint}: Ключ = {keyType}, Данные = {dataObject}");
+                }
+
+                byte[] requestData = await Task.Run(() => SerializationUtils.SerializeObject(dataObject));  // добавлен await
+                await SendDataAsync(requestData);  // добавлен await
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Ошибка при отправке данных клиенту: {ex.Message}");
+                SocketUtils.CloseSocket(clientSocket);
+            }
+        }
+
+        private async Task SendDataAsync(byte[] data)
+        {
+            try
+            {
+                Debug.Log($"Sending data to client: {clientSocket.RemoteEndPoint}, Data size: {data.Length}");
+
+                using NetworkStream networkStream = new(clientSocket);
+                await networkStream.WriteAsync(data, 0, data.Length);  // добавлен await
+
+                Debug.Log("Data successfully sent.");
+            }
+            catch (SocketException ex)
+            {
+                Debug.LogError($"SocketException while sending data: {ex.Message}");
+                SocketUtils.CloseSocket(clientSocket);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Error sending data: {ex.Message}");
+                SocketUtils.CloseSocket(clientSocket);
             }
         }
     }
+
 }
+
+public static class SerializationUtils
+{
+    public static byte[] SerializeObject(object obj)
+    {
+        using MemoryStream memoryStream = new();
+        var formatter = new BinaryFormatter();
+        formatter.Serialize(memoryStream, obj);
+        return memoryStream.ToArray();
+    }
+
+    public static T DeserializeObject<T>(byte[] data)
+    {
+        using MemoryStream memoryStream = new(data);
+        var formatter = new BinaryFormatter();
+        return (T)formatter.Deserialize(memoryStream);
+    }
+}
+
+public static class SocketUtils
+{
+    public static void CloseSocket(Socket socket)
+    {
+        if (socket != null)
+        {
+            socket.Shutdown(SocketShutdown.Both);
+            socket.Close();
+        }
+    }
+}
+*/

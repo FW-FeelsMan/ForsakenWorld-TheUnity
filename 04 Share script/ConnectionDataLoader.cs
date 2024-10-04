@@ -29,7 +29,7 @@ public class ConnectionDataLoader: MonoBehaviour
         }
         else
         {
-            LogProcessor.ProcessLog(FWL.GetClassName(), ErrorMessageFileNotFound);
+            
         }
     }
 }

@@ -1,3 +1,4 @@
+// File: SocketClient.cs
 using System;
 using System.Collections;
 using System.Net.Sockets;
@@ -21,7 +22,6 @@ public class SocketClient : Singleton<SocketClient>
         decodingDataFromServer = gameObject.AddComponent<DecodingDataFromServer>();
 
         uiManager.Initialization();
-        Logger.CurrentLogLevel = LogLevel.Debug;  // Set the desired log level here
     }
 
     private void CloseConnection(Socket client)
@@ -30,7 +30,7 @@ public class SocketClient : Singleton<SocketClient>
         {
             client.Shutdown(SocketShutdown.Both);
             client.Close();
-            Logger.Log("Connection closed.", LogLevel.Info);
+            ThreadSafeLogger.Log("Connection closed.");
         }
     }
 
@@ -58,24 +58,56 @@ public class SocketClient : Singleton<SocketClient>
             {
                 Client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 uiManager.DisplayConnecting();
-                Logger.Log("Connecting to server...", LogLevel.Info);
+                
                 await ConnectToServerAsync();
                 _networkStream = new NetworkStream(Client);
                 StartCoroutine(CheckConnection(Client));
                 StartListeningForResponses();
                 isConnected = true;
                 uiManager.HideConnecting();
-                Logger.Log("Connected to server.", LogLevel.Info);
+                
             }
 
             await _networkStream.WriteAsync(data, 0, data.Length);
-            Logger.Log($"Sent {data.Length} bytes to server.", LogLevel.Debug);
+            
+
+            if (!await IsPacketReceivedWithinTimeout())
+            {
+                uiManager.DisplayAnswer(0, GlobalStrings.ErrorWaitingForResponse);
+            }
         }
         catch (SocketException ex)
         {
             uiManager.DisplayError(GlobalStrings.ErrorConnectingToServer);
-            Logger.Log($"SocketException: {ex.Message}", LogLevel.Error);
+            ThreadSafeLogger.Log($"SocketException: {ex.Message}");
         }
+    }
+
+    private async Task<bool> IsPacketReceivedWithinTimeout()
+    {
+        int timeoutMilliseconds = 50000;
+        int checkInterval = 1000; 
+        DateTime startTime = DateTime.Now;
+
+        while ((DateTime.Now - startTime).TotalMilliseconds < timeoutMilliseconds)
+        {
+            if (_networkStream.DataAvailable)
+            {
+                byte[] buffer = new byte[1024]; 
+                int bytesRead = await _networkStream.ReadAsync(buffer, 0, buffer.Length);
+                if (bytesRead > 0)
+                {
+                    
+                    return true;
+                }
+            }
+            else
+            {
+                await Task.Delay(checkInterval);
+            }
+        }
+        ThreadSafeLogger.Log("Timeout waiting for packet from server.");
+        return false;
     }
 
     private async Task ConnectToServerAsync()
@@ -88,7 +120,7 @@ public class SocketClient : Singleton<SocketClient>
             isConnected = false;
             throw new SocketException((int)SocketError.TimedOut);
         }
-        Logger.Log("Successfully connected to server.", LogLevel.Info);
+        
     }
 
     private IEnumerator CheckConnection(Socket client)
@@ -99,7 +131,7 @@ public class SocketClient : Singleton<SocketClient>
             if (_networkStream == null || !_networkStream.CanRead || !_networkStream.CanWrite)
             {
                 uiManager.DisplayError(GlobalStrings.ErrorMessageConnectionLost);
-                Logger.Log("Connection lost.", LogLevel.Warning);
+                ThreadSafeLogger.Log("Connection lost.");
                 ServerDisconnected?.Invoke();
                 break;
             }
@@ -118,13 +150,13 @@ public class SocketClient : Singleton<SocketClient>
 
                 if (length > 0)
                 {
-                    Logger.Log($"Received {length} bytes from server.", LogLevel.Debug);
+                    
                     await decodingDataFromServer.ProcessPacketAsync(responseBuffer);
                 }
                 else
                 {
                     uiManager.DisplayError(GlobalStrings.ErrorMessageConnectionLost);
-                    Logger.Log("Connection lost: no data received.", LogLevel.Warning);
+                    ThreadSafeLogger.Log("Connection lost: no data received.");
                     ServerDisconnected?.Invoke();
                     break;
                 }
@@ -132,7 +164,7 @@ public class SocketClient : Singleton<SocketClient>
             catch (Exception ex)
             {
                 uiManager.DisplayError(GlobalStrings.ErrorMessageConnectionLost);
-                Logger.Log($"Exception while listening for responses: {ex.Message}", LogLevel.Error);
+                ThreadSafeLogger.Log($"Exception while listening for responses: {ex.Message}");
                 ServerDisconnected?.Invoke();
                 break;
             }
