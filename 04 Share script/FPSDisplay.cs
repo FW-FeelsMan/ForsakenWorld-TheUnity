@@ -5,6 +5,7 @@ using System;
 public class FPSDisplay : MonoBehaviour
 {
     public TextMeshProUGUI fpsText;  
+    public TextMeshProUGUI pingText; 
     private float deltaTime = 0.0f;
 
     private void Update()
@@ -13,5 +14,9 @@ public class FPSDisplay : MonoBehaviour
         float fps = 1.0f / deltaTime;
 
         fpsText.text = Math.Round(fps).ToString();
+        
+        if(GlobalSettings.CurrentPing <= 0){
+             pingText.text = "no connection";
+        }else pingText.text = GlobalSettings.CurrentPing.ToString();
     }
 }

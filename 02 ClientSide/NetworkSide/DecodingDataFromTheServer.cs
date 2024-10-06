@@ -60,11 +60,12 @@ public class DecodingDataFromServer : MonoBehaviour
                     long pingTime = pingTimer.ElapsedMilliseconds;  
                     float infelicityTime = .1f;
                     ThreadSafeLogger.Log($"Пинг: {pingTime + infelicityTime} мс");
+                    GlobalSettings.CurrentPing = pingTime + 1;
 
-                    if (pingTime > 5000)
+                    if (pingTime > GlobalSettings.MaxServerResponseTimeout)
                     {
                         UIManager.instance.DisplayAnswer(0, GlobalStrings.ErrorWaitingForResponse);
-                    }
+                    }  
                     else
                     {
                         Task.Run(async () => await RequestToServer.SendPingMessage());
