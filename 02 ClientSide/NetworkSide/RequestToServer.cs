@@ -1,21 +1,22 @@
-// File: RequestToServer.cs
 using System;
 using System.Collections;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
-using ForsakenWorld;
+using System.Diagnostics;
 using UnityEngine;
 
 public class RequestToServer : MonoBehaviour
 {
     private UIManager uIManager;
     private UserInputManager userInputManager;
+    private static Stopwatch pingTimer = new Stopwatch();
+
 
     void Start()
     {
         uIManager = GetComponent<UIManager>();
-        userInputManager = GetComponent<UserInputManager>();        
+        userInputManager = GetComponent<UserInputManager>();
     }
 
     public void OnLoginButtonClicked()
@@ -39,14 +40,14 @@ public class RequestToServer : MonoBehaviour
         {
             isValid = false;
             errorMessage = GlobalStrings.UnknownRequestType;
-             ThreadSafeLogger.Log("Unknown request type.");
+            ThreadSafeLogger.Log("Unknown request type.");
         }
 
         if (keyType == CommandKeys.LoginRequest && !EmailValidator.IsValidEmail(userInput.Email))
         {
             isValid = false;
             errorMessage = GlobalStrings.IncorrectEmail;
-             ThreadSafeLogger.Log("Invalid email format for login request.");
+            ThreadSafeLogger.Log("Invalid email format for login request.");
         }
         else if (keyType == CommandKeys.RegistrationRequest)
         {
@@ -54,25 +55,25 @@ public class RequestToServer : MonoBehaviour
             {
                 isValid = false;
                 errorMessage = GlobalStrings.IncorrectEmail;
-                 ThreadSafeLogger.Log("Invalid email format for registration request.");
+                ThreadSafeLogger.Log("Invalid email format for registration request.");
             }
             else if (!EmailValidator.IsValidPassword(userInput.Password))
             {
                 isValid = false;
                 errorMessage = GlobalStrings.IncorrectPassword;
-                 ThreadSafeLogger.Log("Invalid password format for registration request.");
+                ThreadSafeLogger.Log("Invalid password format for registration request.");
             }
             else if (userInput.Password != userInput.ConfirmPassword)
             {
                 isValid = false;
                 errorMessage = GlobalStrings.PasswordMismatch;
-                 ThreadSafeLogger.Log("Password mismatch in registration request.");
+                ThreadSafeLogger.Log("Password mismatch in registration request.");
             }
             else if (!userInputManager.conditionTerminsCheck.isOn)
             {
                 isValid = false;
                 errorMessage = GlobalStrings.UserAgreementFail;
-                 ThreadSafeLogger.Log("User agreement not accepted in registration request.");
+                ThreadSafeLogger.Log("User agreement not accepted in registration request.");
             }
         }
 
@@ -82,10 +83,10 @@ public class RequestToServer : MonoBehaviour
         }
         else
         {
-             
+
             var task = UserData(keyType, userInput.Email, userInput.Password, userInputManager.forceLoginRequested.isOn);
             yield return new WaitUntil(() => task.IsCompleted);
-             
+
         }
     }
 
@@ -104,6 +105,21 @@ public class RequestToServer : MonoBehaviour
 
         return await RequestTypeAsync(keyType, dataObject);
     }
+
+    public static async Task SendPingMessage()
+    {
+        pingTimer.Restart(); 
+
+        var dataObject = new GlobalDataClasses.ClientResponseMessage
+        {
+            KeyType = CommandKeys.GetPing,
+            Message = "Ping"
+        };
+
+        await RequestTypeAsync(CommandKeys.GetPing, dataObject);
+    }
+
+
 
     public static async Task<byte[]> RequestTypeAsync(string keyType, object dataObject)
     {
@@ -126,13 +142,12 @@ public class RequestToServer : MonoBehaviour
             }
 
             await SocketClient.Instance.SendData(requestData);
-             ThreadSafeLogger.Log($"Sent request to server: {keyType}");
 
             return requestData;
         }
         catch (Exception ex)
         {
-             ThreadSafeLogger.Log($"Error in RequestTypeAsync: {ex.Message}");
+            ThreadSafeLogger.Log($"Error in RequestTypeAsync: {ex.Message}");
             return null;
         }
     }

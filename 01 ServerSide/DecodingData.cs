@@ -26,7 +26,6 @@ public class DecodingData : MonoBehaviour
         answerToClient = new AnswerToClient(clientSocket);
         IntPtr handle = clientSocket.Handle;
         clientSocketNum = handle.ToInt32();
-        //ThreadSafeLogger.Log($"DecodingData initialized for client socket: {clientSocket.RemoteEndPoint}");
         PacketHandlers();
     }
 
@@ -34,14 +33,25 @@ public class DecodingData : MonoBehaviour
     {
         PacketHandler(CommandKeys.LoginRequest, HandleLoginRequest);
         PacketHandler(CommandKeys.RegistrationRequest, HandleRegistrationRequest);
-
-        //ThreadSafeLogger.Log("Packet handlers registered.");
+        PacketHandler(CommandKeys.GetPing, HandleGetPingRequest);
     }
 
     private void PacketHandler(string keyType, Action<object> handler)
     {
         handlers[keyType] = handler;
-        //ThreadSafeLogger.Log($"Packet handler registered for key: {keyType}");
+    }
+
+    private async void HandleGetPingRequest(object dataObject)
+    {
+        if (!(dataObject is GlobalDataClasses.ClientResponseMessage userPingRequest))
+        {
+            ThreadSafeLogger.Log("Invalid ping request data.");
+            await answerToClient.ServerResponseWrapper(CommandKeys.FailedLogin, GlobalStrings.UnknownPackage);
+            return;
+        }
+        string keyType = userPingRequest.KeyType;
+        string message = userPingRequest.Message;
+        await answerToClient.ServerResponseWrapper(CommandKeys.GetPong, GlobalStrings.PongMessage);
     }
 
     private async void HandleLoginRequest(object dataObject)
@@ -113,7 +123,6 @@ public class DecodingData : MonoBehaviour
         await dataHandler.SetClientStatusAsync(email, 1);
         await dataHandler.SetSocketClientAsync(email, clientSocketNum);
         await answerToClient.ServerResponseWrapper(CommandKeys.SuccessfulLogin, GlobalStrings.WelcomeMessage);
-        ThreadSafeLogger.Log($"User logged in successfully: {email}");
     }
 
     private async void HandleRegistrationRequest(object dataObject)
@@ -183,7 +192,6 @@ public class DecodingData : MonoBehaviour
             if (handlers.TryGetValue(keyType, out var handler))
             {
                 object dataObject = formatter.Deserialize(memoryStream);
-                //ThreadSafeLogger.Log($"Processing packet with key: {keyType}");
                 handler(dataObject);
             }
             else

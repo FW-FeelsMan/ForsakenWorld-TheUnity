@@ -4,14 +4,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading.Tasks;
-using ForsakenWorld;
+using System.Diagnostics;
 using UnityEngine;
 
 public class DecodingDataFromServer : MonoBehaviour
 {
     private readonly Dictionary<string, Action<object>> handlers = new();
     private readonly Queue<Action> mainThreadQueue = new();
-
+    private static Stopwatch pingTimer = new Stopwatch();
     public DecodingDataFromServer()
     {
         PacketHandlers();
@@ -19,18 +19,18 @@ public class DecodingDataFromServer : MonoBehaviour
 
     private void PacketHandlers()
     {
-        RegisterResponse(CommandKeys.SuccessfulLogin, ResponseProcessing);
-        RegisterResponse(CommandKeys.FailedLogin, ResponseProcessing);
-        RegisterResponse(CommandKeys.SuccessfulRegistration, ResponseProcessing);
-        RegisterResponse(CommandKeys.FailedRegistration, ResponseProcessing);
+        Response(CommandKeys.SuccessfulLogin, ResponseProcessing);
+        Response(CommandKeys.FailedLogin, ResponseProcessing);
+        Response(CommandKeys.SuccessfulRegistration, ResponseProcessing);
+        Response(CommandKeys.FailedRegistration, ResponseProcessing);
 
-        
+        Response(CommandKeys.GetPong, ResponseProcessing);
     }
 
-    private void RegisterResponse(string keyType, Action<object> handler)
+    private void Response(string keyType, Action<object> handler)
     {
         handlers[keyType] = handler;
-        
+
     }
 
     private void ResponseProcessing(object dataObject)
@@ -40,13 +40,11 @@ public class DecodingDataFromServer : MonoBehaviour
             string key = responseData.KeyType;
             string message = responseData.Message;
 
-            
-
             switch (key)
             {
                 case CommandKeys.SuccessfulLogin:
-                    
-                    ThreadSafeLogger.Log($"Добро пожаловать");
+                    Task.Run(async () => await RequestToServer.SendPingMessage());
+                    //ThreadSafeLogger.Log($"Добро пожаловать");
                     break;
                 case CommandKeys.FailedLogin:
                     EnqueueMainThreadAction(() => UIManager.instance.DisplayAnswer(0, message));
@@ -57,6 +55,22 @@ public class DecodingDataFromServer : MonoBehaviour
                 case CommandKeys.FailedRegistration:
                     EnqueueMainThreadAction(() => UIManager.instance.DisplayAnswer(0, message));
                     break;
+                case CommandKeys.GetPong:
+                    pingTimer.Stop(); 
+                    long pingTime = pingTimer.ElapsedMilliseconds;  
+                    float infelicityTime = .1f;
+                    ThreadSafeLogger.Log($"Пинг: {pingTime + infelicityTime} мс");
+
+                    if (pingTime > 5000)
+                    {
+                        UIManager.instance.DisplayAnswer(0, GlobalStrings.ErrorWaitingForResponse);
+                    }
+                    else
+                    {
+                        Task.Run(async () => await RequestToServer.SendPingMessage());
+                    }
+                    break;
+
                 default:
                     ThreadSafeLogger.Log($"Unhandled key: {key}");
                     break;
@@ -101,7 +115,7 @@ public class DecodingDataFromServer : MonoBehaviour
                 if (handlers.TryGetValue(keyType, out var handler))
                 {
                     object dataObject = formatter.Deserialize(memoryStream);
-                    
+
                     handler(dataObject);
                 }
                 else

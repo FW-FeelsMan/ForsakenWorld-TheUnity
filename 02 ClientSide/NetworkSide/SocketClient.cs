@@ -69,45 +69,13 @@ public class SocketClient : Singleton<SocketClient>
             }
 
             await _networkStream.WriteAsync(data, 0, data.Length);
-            
-
-            if (!await IsPacketReceivedWithinTimeout())
-            {
-                uiManager.DisplayAnswer(0, GlobalStrings.ErrorWaitingForResponse);
-            }
+        
         }
         catch (SocketException ex)
         {
             uiManager.DisplayError(GlobalStrings.ErrorConnectingToServer);
             ThreadSafeLogger.Log($"SocketException: {ex.Message}");
         }
-    }
-
-    private async Task<bool> IsPacketReceivedWithinTimeout()
-    {
-        int timeoutMilliseconds = 50000;
-        int checkInterval = 1000; 
-        DateTime startTime = DateTime.Now;
-
-        while ((DateTime.Now - startTime).TotalMilliseconds < timeoutMilliseconds)
-        {
-            if (_networkStream.DataAvailable)
-            {
-                byte[] buffer = new byte[1024]; 
-                int bytesRead = await _networkStream.ReadAsync(buffer, 0, buffer.Length);
-                if (bytesRead > 0)
-                {
-                    
-                    return true;
-                }
-            }
-            else
-            {
-                await Task.Delay(checkInterval);
-            }
-        }
-        ThreadSafeLogger.Log("Timeout waiting for packet from server.");
-        return false;
     }
 
     private async Task ConnectToServerAsync()

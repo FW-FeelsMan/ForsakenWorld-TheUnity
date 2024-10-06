@@ -19,4 +19,10 @@ public class GlobalDataClasses : MonoBehaviour
         public string KeyType { get; set; }
         public string Message { get; set; }
     }
+    [Serializable]
+    public struct ClientResponseMessage
+    {
+        public string KeyType { get; set; }
+        public string Message { get; set; }
+    }
 }

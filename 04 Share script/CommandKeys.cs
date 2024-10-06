@@ -4,6 +4,7 @@ public static class CommandKeys
     public const string FailedLogin = "LgFl_#@!"; // Неудачный вход
     public const string FailedRegistration = "RgFl_#@!"; // Неудачная регистрация
     public const string GetPing = "GtPng_#@!";
+    public const string GetPong = "GtPong_#@!";
     public const string GetPlayerEmail = "GtEml_#@!";
     public const string GetDevId = "GtDvId_#@!";
     public const string Heartbeat = "HBt_#@!"; // Сигнал поддержания соединения (heartbeat)

@@ -25,8 +25,7 @@ public class AnswerToClient : MonoBehaviour
         {
             KeyType = keyType,
             Message = message
-        };
-        ThreadSafeLogger.Log($"Отправлено: {keyType}, {message}");
+        };  
 
         await RequestTypeAsync(keyType, dataObject);
     }
@@ -52,7 +51,6 @@ public class AnswerToClient : MonoBehaviour
             }
 
             await SendDataAsync(requestData);
-            //ThreadSafeLogger.Log($"Отправлен ключ: {keyType}");
         }
         catch (Exception ex)
         {
@@ -67,7 +65,6 @@ public class AnswerToClient : MonoBehaviour
         {
             using NetworkStream networkStream = new(clientSocket);
             await networkStream.WriteAsync(data, 0, data.Length);
-            //ThreadSafeLogger.Log("Data sent to client.");
         }
         catch (Exception ex)
         {

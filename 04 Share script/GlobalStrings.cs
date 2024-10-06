@@ -17,6 +17,8 @@ public static class GlobalStrings
     public const string IncorrectPassword = "Некорректный пароль! Пароль должен содержать только латинские буквы и цифры, и быть не менее 6 символов.";
     public const string PasswordMismatch = "Пароли не совпадают!";
     public const string PasswordisEmpty = "Пароль не введен!";
+    public const string PongMessage = "Понг!";
+    public const string PingMessage = "Пинг!";
     public const string RegistrationErrorEmailExists = "Ошибка регистрации: Email уже зарегистрирован";
     public const string ServerStarted = "Сервер запущен ";
     public const string SuccessfulLogin = "Вход успешен!";
